@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.HashMap;
 
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -64,13 +65,13 @@ public class ListTenantMappingAPITest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/thirdparty/tenant/config", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_16ForTests(), "thirdparty");
+                    Utils.getCdiVersionStringLatestForTests(), "thirdparty");
 
             assertEquals("OK", response.get("status").getAsString());
             assertTrue(response.get("created").getAsBoolean());
             assertFalse(response.get("update").getAsBoolean());
 
-            ThirdPartyTenantConfig tpTenantConfig = StorageLayer.getThirdPartyStorage(process.main)
+            ThirdPartyTenantConfig tpTenantConfig = StorageLayer.getThirdPartyStorage(new TenantIdentifier(null, null, null), process.main)
                     .getThirdPartyTenantConfig(supertokensTenantId, thirdPartyId);
             assertEquals(config.toString(), tpTenantConfig.config);
             assertEquals(supertokensTenantId, tpTenantConfig.supertokensTenantId);
@@ -84,7 +85,7 @@ public class ListTenantMappingAPITest {
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/thirdparty/tenant/config/list", QUERY_PARAMS, 1000, 1000, null,
-                    Utils.getCdiVersion2_16ForTests(), "thirdparty");
+                    Utils.getCdiVersionStringLatestForTests(), "thirdparty");
             assertEquals("OK", response.get("status").getAsString());
             JsonArray configs = response.get("configs").getAsJsonArray();
             assertEquals(1, configs.size());
@@ -101,7 +102,7 @@ public class ListTenantMappingAPITest {
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/thirdparty/tenant/config/list", QUERY_PARAMS, 1000, 1000, null,
-                    Utils.getCdiVersion2_16ForTests(), "thirdparty");
+                    Utils.getCdiVersionStringLatestForTests(), "thirdparty");
             assertEquals("OK", response.get("status").getAsString());
             JsonArray configs = response.get("configs").getAsJsonArray();
             assertEquals(1, configs.size());

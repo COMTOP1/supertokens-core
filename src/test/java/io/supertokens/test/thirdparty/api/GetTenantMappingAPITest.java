@@ -60,7 +60,7 @@ public class GetTenantMappingAPITest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/thirdparty/tenant/config", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_16ForTests(), "thirdparty");
+                    Utils.getCdiVersionStringLatestForTests(), "thirdparty");
 
             assertEquals("OK", response.get("status").getAsString());
             assertTrue(response.get("created").getAsBoolean());
@@ -75,7 +75,7 @@ public class GetTenantMappingAPITest {
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/thirdparty/tenant/config", QUERY_PARAMS, 1000, 1000, null,
-                    Utils.getCdiVersion2_16ForTests(), "thirdparty");
+                    Utils.getCdiVersionStringLatestForTests(), "thirdparty");
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(config, response.get("config").getAsJsonObject());
         }

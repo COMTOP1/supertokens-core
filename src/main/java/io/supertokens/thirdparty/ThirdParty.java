@@ -372,14 +372,14 @@ public class ThirdParty {
     }
 
     public static CreateOrUpdateTenantMappingResponse createOrUpdateThirdPartyTenantMapping(Main main,
-            String supertokensTenantId, String thirdPartyId, String config) throws StorageQueryException {
+            String supertokensTenantId, String thirdPartyId, String config) throws StorageQueryException, TenantOrAppNotFoundException {
 
         try {
-            StorageLayer.getThirdPartyStorage(main).createThirdPartyTenantMapping(supertokensTenantId, thirdPartyId,
+            StorageLayer.getThirdPartyStorage(new TenantIdentifier(null, null, null), main).createThirdPartyTenantMapping(supertokensTenantId, thirdPartyId,
                     config);
             return new CreateOrUpdateTenantMappingResponse(true, false);
-        } catch (DuplicateThirdPartyTenantMappingException e) {
-            boolean wasUpdated = StorageLayer.getThirdPartyStorage(main)
+        } catch (DuplicateThirdPartyTenantMappingException | TenantOrAppNotFoundException e) {
+            boolean wasUpdated = StorageLayer.getThirdPartyStorage(new TenantIdentifier(null, null, null), main)
                     .updateThirdPartyTenantMapping(supertokensTenantId, thirdPartyId, config);
             return new CreateOrUpdateTenantMappingResponse(false, wasUpdated);
         }
@@ -387,22 +387,27 @@ public class ThirdParty {
 
     public static ThirdPartyTenantConfig getThirdPartyTenantConfig(Main main, String supertokensTenantId,
             String thirdPartyId) throws StorageQueryException {
-        return StorageLayer.getThirdPartyStorage(main).getThirdPartyTenantConfig(supertokensTenantId, thirdPartyId);
+        try {
+            return StorageLayer.getThirdPartyStorage(new TenantIdentifier(null, null, null), main).getThirdPartyTenantConfig(supertokensTenantId, thirdPartyId);
+        } catch (TenantOrAppNotFoundException e) {
+            e.printStackTrace();
+            return new ThirdPartyTenantConfig(null, null, null);
+        }
     }
 
     public static ThirdPartyTenantConfig[] listThirdPartyTenantConfigs(Main main, String supertokensTenantId,
-            String thirdPartyId) throws StorageQueryException {
+            String thirdPartyId) throws StorageQueryException, TenantOrAppNotFoundException {
         if (supertokensTenantId != null) {
-            return StorageLayer.getThirdPartyStorage(main)
+            return StorageLayer.getThirdPartyStorage(new TenantIdentifier(null, null, null), main)
                     .getThirdPartyTenantConfigsForSuperTokensTenantId(supertokensTenantId);
         } else {
-            return StorageLayer.getThirdPartyStorage(main).getThirdPartyTenantConfigsForThirdPartyId(thirdPartyId);
+            return StorageLayer.getThirdPartyStorage(new TenantIdentifier(null, null, null), main).getThirdPartyTenantConfigsForThirdPartyId(thirdPartyId);
         }
     }
 
     public static boolean deleteTenantMapping(Main main, String supertokensTenantId, String thirdPartyId)
-            throws StorageQueryException {
-        return StorageLayer.getThirdPartyStorage(main).deleteThirdPartyTenantMapping(supertokensTenantId, thirdPartyId);
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        return StorageLayer.getThirdPartyStorage(new TenantIdentifier(null, null, null), main).deleteThirdPartyTenantMapping(supertokensTenantId, thirdPartyId);
     }
 
     @Deprecated

@@ -63,7 +63,9 @@ import io.supertokens.pluginInterface.session.SessionInfo;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
+import io.supertokens.pluginInterface.thirdparty.ThirdPartyStorage;
 import io.supertokens.pluginInterface.thirdparty.ThirdPartyTenantConfig;
+import io.supertokens.pluginInterface.thirdparty.UserInfo;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyTenantMappingException;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
@@ -2985,6 +2987,67 @@ public class Start
     }
 
     @Override
+    public void signUp(UserInfo userInfo) throws StorageQueryException, io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException, DuplicateThirdPartyUserException {
+
+    }
+
+    @Override
+    public void deleteThirdPartyUser(String s) throws StorageQueryException {
+
+    }
+
+    @Override
+    public UserInfo getThirdPartyUserInfoUsingId(String s, String s1) throws StorageQueryException {
+//        try {
+//            return UserInfo.(this, sqlCon, tenantIdentifier, sessionHandle);
+//        } catch (SQLException e) {
+//            throw new StorageQueryException(e);
+//        }
+//        try {
+//            return new UserInfo(this, tenantIdentifier, id, email, passwordHash, timeJoined);
+//        } catch (StorageTransactionLogicException eTemp) {
+//            if (eTemp.actualException instanceof SQLiteException) {
+//                SQLiteConfig config = Config.getConfig(this);
+//                String serverMessage = eTemp.actualException.getMessage();
+//
+//                if (isUniqueConstraintError(serverMessage, config.getEmailPasswordUserToTenantTable(),
+//                        new String[]{"app_id", "tenant_id", "email"})) {
+//                    throw new DuplicateEmailException();
+//                } else if (isPrimaryKeyError(serverMessage, config.getEmailPasswordUsersTable(),
+//                        new String[]{"app_id", "user_id"})
+//                        || isPrimaryKeyError(serverMessage, config.getUsersTable(),
+//                        new String[]{"app_id", "tenant_id", "user_id"})
+//                        || isPrimaryKeyError(serverMessage, config.getEmailPasswordUserToTenantTable(),
+//                        new String[]{"app_id", "tenant_id", "user_id"})
+//                        || isPrimaryKeyError(serverMessage, config.getAppIdToUserIdTable(),
+//                        new String[]{"app_id", "user_id"})) {
+//                    throw new DuplicateUserIdException();
+//                } else if (isForeignKeyConstraintError(
+//                        serverMessage,
+//                        config.getAppsTable(),
+//                        new String[]{"app_id"},
+//                        new Object[]{tenantIdentifier.getAppId()})) {
+//                    throw new TenantOrAppNotFoundException(tenantIdentifier);
+//                } else if (isForeignKeyConstraintError(
+//                        serverMessage,
+//                        config.getTenantsTable(),
+//                        new String[]{"app_id", "tenant_id"},
+//                        new Object[]{tenantIdentifier.getAppId(), tenantIdentifier.getTenantId()})) {
+//                    throw new TenantOrAppNotFoundException(tenantIdentifier);
+//                }
+//            }
+//
+//            throw new StorageQueryException(eTemp.actualException);
+//        }
+        return null;
+    }
+
+    @Override
+    public UserInfo getThirdPartyUserInfoUsingId(String s) throws StorageQueryException {
+        return null;
+    }
+
+    @Override
     public boolean deleteThirdPartyTenantMapping(String supertokensTenantId, String thirdPartyId)
             throws StorageQueryException {
         try {
@@ -3051,5 +3114,25 @@ public class Start
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public UserInfo[] getThirdPartyUsers(@NotNull String s, @NotNull Long aLong, @NotNull Integer integer, @NotNull String s1) throws StorageQueryException {
+        return new UserInfo[0];
+    }
+
+    @Override
+    public UserInfo[] getThirdPartyUsers(@NotNull Integer integer, @NotNull String s) throws StorageQueryException {
+        return new UserInfo[0];
+    }
+
+    @Override
+    public long getThirdPartyUsersCount() throws StorageQueryException {
+        return 0;
+    }
+
+    @Override
+    public UserInfo[] getThirdPartyUsersByEmail(@NotNull String s) throws StorageQueryException {
+        return new UserInfo[0];
     }
 }

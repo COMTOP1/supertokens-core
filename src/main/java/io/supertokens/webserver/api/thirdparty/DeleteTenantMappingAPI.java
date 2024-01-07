@@ -2,9 +2,10 @@ package io.supertokens.webserver.api.thirdparty;
 
 import java.io.IOException;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import com.google.gson.JsonObject;
 
@@ -57,7 +58,7 @@ public class DeleteTenantMappingAPI extends WebserverAPI {
             response.addProperty("status", "OK");
             response.addProperty("didConfigExist", deleteResponse);
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

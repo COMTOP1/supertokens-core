@@ -2,9 +2,10 @@ package io.supertokens.webserver.api.thirdparty;
 
 import java.io.IOException;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import com.fasterxml.jackson.databind.util.JSONPObject;
 import com.google.gson.JsonObject;
@@ -66,7 +67,7 @@ public class TenantMappingAPI extends WebserverAPI {
             response.addProperty("created", mappingResponse.wasCreated);
             response.addProperty("update", mappingResponse.wasUpdated);
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

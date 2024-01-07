@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.HashMap;
 
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -63,13 +64,13 @@ public class DeleteTenantMappingAPITest {
             requestBody.add("config", config);
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/thirdparty/tenant/config", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_16ForTests(), "thirdparty");
+                    Utils.getCdiVersionStringLatestForTests(), "thirdparty");
             assertEquals("OK", response.get("status").getAsString());
             assertTrue(response.get("created").getAsBoolean());
             assertFalse(response.get("update").getAsBoolean());
         }
 
-        ThirdPartyTenantConfig tpTenantConfig = StorageLayer.getThirdPartyStorage(process.main)
+        ThirdPartyTenantConfig tpTenantConfig = StorageLayer.getThirdPartyStorage(new TenantIdentifier(null, null, null), process.main)
                 .getThirdPartyTenantConfig(supertokensTenantId, thirdPartyId);
         assertEquals(config.toString(), tpTenantConfig.config);
         assertEquals(supertokensTenantId, tpTenantConfig.supertokensTenantId);
@@ -82,7 +83,7 @@ public class DeleteTenantMappingAPITest {
             requestBody.addProperty("thirdPartyId", thirdPartyId);
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/thirdparty/tenant/config/remove", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_16ForTests(), "thirdparty");
+                    Utils.getCdiVersionStringLatestForTests(), "thirdparty");
 
             assertEquals("OK", response.get("status").getAsString());
             assertTrue(response.get("didConfigExist").getAsBoolean());
@@ -95,7 +96,7 @@ public class DeleteTenantMappingAPITest {
             requestBody.addProperty("thirdPartyId", thirdPartyId);
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/thirdparty/tenant/config/remove", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_16ForTests(), "thirdparty");
+                    Utils.getCdiVersionStringLatestForTests(), "thirdparty");
 
             assertEquals("OK", response.get("status").getAsString());
             assertFalse(response.get("didConfigExist").getAsBoolean());

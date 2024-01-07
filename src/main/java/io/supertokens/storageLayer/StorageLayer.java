@@ -24,6 +24,7 @@ import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.LOG_LEVEL;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
@@ -32,6 +33,7 @@ import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import jakarta.servlet.ServletException;
@@ -498,5 +500,16 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
 
         throw new UnknownUserIdException();
+    }
+
+    public static ThirdPartySQLStorage getThirdPartyStorage(TenantIdentifier tenantIdentifier, Main main) throws TenantOrAppNotFoundException {
+        if (getInstance(tenantIdentifier, main) == null) {
+            throw new QuitProgramException("please call init() before calling getStorageLayer");
+        }
+        if (getInstance(tenantIdentifier, main).storage.getType() != STORAGE_TYPE.SQL) {
+            // we only support SQL for now
+            throw new UnsupportedOperationException("");
+        }
+        return (ThirdPartySQLStorage) getInstance(tenantIdentifier, main).storage;
     }
 }
