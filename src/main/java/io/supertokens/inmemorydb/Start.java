@@ -62,6 +62,7 @@ import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLSto
 import io.supertokens.pluginInterface.session.SessionInfo;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
+import io.supertokens.pluginInterface.sqlStorage.SessionObject;
 import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 import io.supertokens.pluginInterface.thirdparty.ThirdPartyStorage;
 import io.supertokens.pluginInterface.thirdparty.ThirdPartyTenantConfig;
@@ -255,6 +256,56 @@ public class Start
     }
 
     @Override
+    public void setKeyValue_Transaction(TransactionConnection transactionConnection, String s, KeyValueInfo keyValueInfo) throws StorageQueryException {
+
+    }
+
+    @Override
+    public KeyValueInfo getKeyValue_Transaction(TransactionConnection transactionConnection, String s) throws StorageQueryException {
+        return null;
+    }
+
+    @Override
+    public <T> T startSimpleTransactionHibernate(SimpleTransactionLogicHibernate<T> simpleTransactionLogicHibernate) throws Exception {
+        return null;
+    }
+
+    @Override
+    public <T> T startTransactionHibernate(TransactionLogicHibernate<T> transactionLogicHibernate) throws StorageQueryException, StorageTransactionLogicException {
+        return null;
+    }
+
+    @Override
+    public void commitTransaction(SessionObject sessionObject) throws Exception {
+
+    }
+
+    @Override
+    public void setKeyValue_Transaction(SessionObject sessionObject, String s, KeyValueInfo keyValueInfo) throws StorageQueryException {
+
+    }
+
+    @Override
+    public KeyValueInfo getKeyValue_Transaction(SessionObject sessionObject, String s) throws StorageQueryException {
+        return null;
+    }
+
+    @Override
+    public void removeLegacyAccessTokenSigningKey_Transaction(TransactionConnection transactionConnection) throws StorageQueryException {
+
+    }
+
+    @Override
+    public void removeLegacyAccessTokenSigningKey_Transaction(SessionObject sessionObject) throws StorageQueryException {
+
+    }
+
+    @Override
+    public KeyValueInfo getLegacyAccessTokenSigningKey_Transaction(TransactionConnection transactionConnection) throws StorageQueryException {
+        return null;
+    }
+
+    @Override
     public KeyValueInfo getLegacyAccessTokenSigningKey_Transaction(AppIdentifier appIdentifier,
                                                                    TransactionConnection con)
             throws StorageQueryException {
@@ -265,6 +316,11 @@ public class Start
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public KeyValueInfo[] getAccessTokenSigningKeys_Transaction(TransactionConnection transactionConnection) throws StorageQueryException {
+        return new KeyValueInfo[0];
     }
 
     @Override
@@ -289,6 +345,26 @@ public class Start
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public void addAccessTokenSigningKey_Transaction(TransactionConnection transactionConnection, KeyValueInfo keyValueInfo) throws StorageQueryException {
+
+    }
+
+    @Override
+    public KeyValueInfo[] getAccessTokenSigningKeys_Transaction(SessionObject sessionObject) throws StorageQueryException {
+        return new KeyValueInfo[0];
+    }
+
+    @Override
+    public void addAccessTokenSigningKey_Transaction(SessionObject sessionObject, KeyValueInfo keyValueInfo) throws StorageQueryException {
+
+    }
+
+    @Override
+    public KeyValueInfo getRefreshTokenSigningKey_Transaction(SessionObject sessionObject) throws StorageQueryException {
+        return null;
     }
 
     @Override
@@ -317,6 +393,11 @@ public class Start
     }
 
     @Override
+    public void setRefreshTokenSigningKey_Transaction(SessionObject sessionObject, KeyValueInfo keyValueInfo) throws StorageQueryException {
+
+    }
+
+    @Override
     public void removeAccessTokenSigningKeysBefore(AppIdentifier appIdentifier, long time)
             throws StorageQueryException {
         try {
@@ -336,6 +417,11 @@ public class Start
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public SessionInfo getSessionInfo_Transaction(SessionObject sessionObject, String s) {
+        return null;
     }
 
     @Override
@@ -519,6 +605,11 @@ public class Start
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public void updateSessionInfo_Transaction(SessionObject sessionObject, String s, String s1, long l) throws StorageQueryException {
+
     }
 
     @Override
@@ -734,6 +825,21 @@ public class Start
     }
 
     @Override
+    public EmailVerificationTokenInfo[] getAllEmailVerificationTokenInfoForUser_Transaction(SessionObject sessionObject, String s, String s1) throws StorageQueryException {
+        return new EmailVerificationTokenInfo[0];
+    }
+
+    @Override
+    public void deleteAllEmailVerificationTokensForUser_Transaction(SessionObject sessionObject, String s, String s1) throws StorageQueryException {
+
+    }
+
+    @Override
+    public void updateIsEmailVerified_Transaction(SessionObject sessionObject, String s, String s1, boolean b) throws StorageQueryException {
+
+    }
+
+    @Override
     public AuthRecipeUserInfo signUp(TenantIdentifier tenantIdentifier, String id, String email, String passwordHash,
                            long timeJoined)
             throws StorageQueryException, DuplicateUserIdException, DuplicateEmailException,
@@ -822,6 +928,106 @@ public class Start
     }
 
     @Override
+    public void signUp(io.supertokens.pluginInterface.emailpassword.UserInfo userInfo) throws StorageQueryException, DuplicateUserIdException, DuplicateEmailException {
+
+    }
+
+    @Override
+    public void deleteEmailPasswordUser(String s) throws StorageQueryException {
+
+    }
+
+    @Override
+    public io.supertokens.pluginInterface.emailpassword.UserInfo getUserInfoUsingId(String s) throws StorageQueryException {
+        return null;
+    }
+
+    @Override
+    public io.supertokens.pluginInterface.emailpassword.UserInfo getUserInfoUsingEmail(String s) throws StorageQueryException {
+        return null;
+    }
+
+    @Override
+    public void addPasswordResetToken(PasswordResetTokenInfo passwordResetTokenInfo) throws StorageQueryException, UnknownUserIdException, DuplicatePasswordResetTokenException {
+
+    }
+
+    @Override
+    public PasswordResetTokenInfo getPasswordResetTokenInfo(String s) throws StorageQueryException {
+        return null;
+    }
+
+    @Override
+    public PasswordResetTokenInfo[] getAllPasswordResetTokenInfoForUser(String s) throws StorageQueryException {
+        return new PasswordResetTokenInfo[0];
+    }
+
+    @Override
+    public io.supertokens.pluginInterface.emailpassword.UserInfo[] getUsers(@NotNull String s, @NotNull Long aLong, @NotNull Integer integer, @NotNull String s1) throws StorageQueryException {
+        return new io.supertokens.pluginInterface.emailpassword.UserInfo[0];
+    }
+
+    @Override
+    public io.supertokens.pluginInterface.emailpassword.UserInfo[] getUsers(@NotNull Integer integer, @NotNull String s) throws StorageQueryException {
+        return new io.supertokens.pluginInterface.emailpassword.UserInfo[0];
+    }
+
+    @Override
+    public long getUsersCount() throws StorageQueryException {
+        return 0;
+    }
+
+    @Override
+    public PasswordResetTokenInfo[] getAllPasswordResetTokenInfoForUser_Transaction(TransactionConnection transactionConnection, String s) throws StorageQueryException {
+        return new PasswordResetTokenInfo[0];
+    }
+
+    @Override
+    public void deleteAllPasswordResetTokensForUser_Transaction(TransactionConnection transactionConnection, String s) throws StorageQueryException {
+
+    }
+
+    @Override
+    public void updateUsersPassword_Transaction(TransactionConnection transactionConnection, String s, String s1) throws StorageQueryException {
+
+    }
+
+    @Override
+    public void updateUsersEmail_Transaction(TransactionConnection transactionConnection, String s, String s1) throws StorageQueryException, DuplicateEmailException {
+
+    }
+
+    @Override
+    public io.supertokens.pluginInterface.emailpassword.UserInfo getUserInfoUsingId_Transaction(TransactionConnection transactionConnection, String s) throws StorageQueryException {
+        return null;
+    }
+
+    @Override
+    public PasswordResetTokenInfo[] getAllPasswordResetTokenInfoForUser_Transaction(SessionObject sessionObject, String s) throws StorageQueryException {
+        return new PasswordResetTokenInfo[0];
+    }
+
+    @Override
+    public void deleteAllPasswordResetTokensForUser_Transaction(SessionObject sessionObject, String s) throws StorageQueryException {
+
+    }
+
+    @Override
+    public void updateUsersPassword_Transaction(SessionObject sessionObject, String s, String s1) throws StorageQueryException {
+
+    }
+
+    @Override
+    public void updateUsersEmail_Transaction(SessionObject sessionObject, String s, String s1) throws StorageQueryException, DuplicateEmailException {
+
+    }
+
+    @Override
+    public io.supertokens.pluginInterface.emailpassword.UserInfo getUserInfoUsingId_Transaction(SessionObject sessionObject, String s) throws StorageQueryException {
+        return null;
+    }
+
+    @Override
     public PasswordResetTokenInfo[] getAllPasswordResetTokenInfoForUser_Transaction(AppIdentifier appIdentifier,
                                                                                     TransactionConnection con,
                                                                                     String userId)
@@ -889,12 +1095,47 @@ public class Start
     }
 
     @Override
+    public void addEmailVerificationToken(EmailVerificationTokenInfo emailVerificationTokenInfo) throws StorageQueryException, DuplicateEmailVerificationTokenException {
+
+    }
+
+    @Override
+    public EmailVerificationTokenInfo getEmailVerificationTokenInfo(String s) throws StorageQueryException {
+        return null;
+    }
+
+    @Override
+    public void deleteEmailVerificationUserInfo(String s) throws StorageQueryException {
+
+    }
+
+    @Override
+    public void revokeAllTokens(String s, String s1) throws StorageQueryException {
+
+    }
+
+    @Override
+    public void unverifyEmail(String s, String s1) throws StorageQueryException {
+
+    }
+
+    @Override
     public void deleteExpiredEmailVerificationTokens() throws StorageQueryException {
         try {
             EmailVerificationQueries.deleteExpiredEmailVerificationTokens(this);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public EmailVerificationTokenInfo[] getAllEmailVerificationTokenInfoForUser(String s, String s1) throws StorageQueryException {
+        return new EmailVerificationTokenInfo[0];
+    }
+
+    @Override
+    public boolean isEmailVerified(String s, String s1) throws StorageQueryException {
+        return false;
     }
 
     @Override
@@ -1078,6 +1319,26 @@ public class Start
     }
 
     @Override
+    public UserInfo getUserInfoUsingId_Transaction(TransactionConnection transactionConnection, String s, String s1) throws StorageQueryException {
+        return null;
+    }
+
+    @Override
+    public void updateUserEmail_Transaction(TransactionConnection transactionConnection, String s, String s1, String s2) throws StorageQueryException {
+
+    }
+
+    @Override
+    public UserInfo getUserInfoUsingId_Transaction(SessionObject sessionObject, String s, String s1) throws StorageQueryException {
+        return null;
+    }
+
+    @Override
+    public void updateUserEmail_Transaction(SessionObject sessionObject, String s, String s1, String s2) throws StorageQueryException {
+
+    }
+
+    @Override
     public void updateUserEmail_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
                                             String thirdPartyId, String thirdPartyUserId,
                                             String newEmail) throws StorageQueryException {
@@ -1221,6 +1482,11 @@ public class Start
     }
 
     @Override
+    public int countUsersEnabledTotp(AppIdentifier appIdentifier) throws StorageQueryException {
+        return 0;
+    }
+
+    @Override
     public void deleteUserActive_Transaction(TransactionConnection con, AppIdentifier appIdentifier, String userId)
             throws StorageQueryException {
         try {
@@ -1290,6 +1556,26 @@ public class Start
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public List<JWTSigningKeyInfo> getJWTSigningKeys_Transaction(TransactionConnection transactionConnection) throws StorageQueryException {
+        return null;
+    }
+
+    @Override
+    public void setJWTSigningKey_Transaction(TransactionConnection transactionConnection, JWTSigningKeyInfo jwtSigningKeyInfo) throws StorageQueryException, DuplicateKeyIdException {
+
+    }
+
+    @Override
+    public List<JWTSigningKeyInfo> getJWTSigningKeys_Transaction(SessionObject sessionObject) throws StorageQueryException {
+        return null;
+    }
+
+    @Override
+    public void setJWTSigningKey_Transaction(SessionObject sessionObject, JWTSigningKeyInfo jwtSigningKeyInfo) throws StorageQueryException, DuplicateKeyIdException {
+
     }
 
     @Override
@@ -1386,6 +1672,106 @@ public class Start
         }
 
         return true;
+    }
+
+    @Override
+    public PasswordlessDevice getDevice_Transaction(TransactionConnection transactionConnection, String s) throws StorageQueryException {
+        return null;
+    }
+
+    @Override
+    public void incrementDeviceFailedAttemptCount_Transaction(TransactionConnection transactionConnection, String s) throws StorageQueryException {
+
+    }
+
+    @Override
+    public PasswordlessCode[] getCodesOfDevice_Transaction(TransactionConnection transactionConnection, String s) throws StorageQueryException {
+        return new PasswordlessCode[0];
+    }
+
+    @Override
+    public void deleteDevice_Transaction(TransactionConnection transactionConnection, String s) throws StorageQueryException {
+
+    }
+
+    @Override
+    public void deleteDevicesByPhoneNumber_Transaction(TransactionConnection transactionConnection, String s) throws StorageQueryException {
+
+    }
+
+    @Override
+    public void deleteDevicesByEmail_Transaction(TransactionConnection transactionConnection, String s) throws StorageQueryException {
+
+    }
+
+    @Override
+    public PasswordlessCode getCodeByLinkCodeHash_Transaction(TransactionConnection transactionConnection, String s) throws StorageQueryException {
+        return null;
+    }
+
+    @Override
+    public void deleteCode_Transaction(TransactionConnection transactionConnection, String s) throws StorageQueryException {
+
+    }
+
+    @Override
+    public void updateUserEmail_Transaction(TransactionConnection transactionConnection, @NotNull String s, @org.jetbrains.annotations.Nullable String s1) throws StorageQueryException, UnknownUserIdException, DuplicateEmailException {
+
+    }
+
+    @Override
+    public void updateUserPhoneNumber_Transaction(TransactionConnection transactionConnection, @NotNull String s, @org.jetbrains.annotations.Nullable String s1) throws StorageQueryException, UnknownUserIdException, DuplicatePhoneNumberException {
+
+    }
+
+    @Override
+    public PasswordlessDevice getDevice_Transaction(SessionObject sessionObject, String s) throws StorageQueryException {
+        return null;
+    }
+
+    @Override
+    public void incrementDeviceFailedAttemptCount_Transaction(SessionObject sessionObject, String s) throws StorageQueryException {
+
+    }
+
+    @Override
+    public PasswordlessCode[] getCodesOfDevice_Transaction(SessionObject sessionObject, String s) throws StorageQueryException {
+        return new PasswordlessCode[0];
+    }
+
+    @Override
+    public void deleteDevice_Transaction(SessionObject sessionObject, String s) throws StorageQueryException {
+
+    }
+
+    @Override
+    public void deleteDevicesByPhoneNumber_Transaction(SessionObject sessionObject, String s) throws StorageQueryException {
+
+    }
+
+    @Override
+    public void deleteDevicesByEmail_Transaction(SessionObject sessionObject, String s) throws StorageQueryException {
+
+    }
+
+    @Override
+    public PasswordlessCode getCodeByLinkCodeHash_Transaction(SessionObject sessionObject, String s) throws StorageQueryException {
+        return null;
+    }
+
+    @Override
+    public void deleteCode_Transaction(SessionObject sessionObject, String s) throws StorageQueryException {
+
+    }
+
+    @Override
+    public void updateUserEmail_Transaction(SessionObject sessionObject, @NotNull String s, @org.jetbrains.annotations.Nullable String s1) throws StorageQueryException, UnknownUserIdException, DuplicateEmailException {
+
+    }
+
+    @Override
+    public void updateUserPhoneNumber_Transaction(SessionObject sessionObject, @NotNull String s, @org.jetbrains.annotations.Nullable String s1) throws StorageQueryException, UnknownUserIdException, DuplicatePhoneNumberException {
+
     }
 
     @Override
@@ -2984,6 +3370,36 @@ public class Start
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public int countUsersEnabledTotpAndActiveSince(AppIdentifier appIdentifier, long l) throws StorageQueryException {
+        return 0;
+    }
+
+    @Override
+    public void deleteUserActive(AppIdentifier appIdentifier, String s) throws StorageQueryException {
+
+    }
+
+    @Override
+    public void updateLastActive(String s) throws StorageQueryException {
+
+    }
+
+    @Override
+    public int countUsersActiveSince(long l) throws StorageQueryException {
+        return 0;
+    }
+
+    @Override
+    public int countUsersEnabledTotp() throws StorageQueryException {
+        return 0;
+    }
+
+    @Override
+    public int countUsersEnabledTotpAndActiveSince(long l) throws StorageQueryException {
+        return 0;
     }
 
     @Override
