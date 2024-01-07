@@ -133,6 +133,11 @@ public class Start
     }
 
     @Override
+    public void constructor(String s, boolean b) {
+
+    }
+
+    @Override
     public void constructor(String processId, boolean silent, boolean isTesting) {
         this.processId = processId;
         Start.silent = silent;
@@ -148,6 +153,16 @@ public class Start
     public void loadConfig(JsonObject ignored, Set<LOG_LEVEL> logLevel, TenantIdentifier tenantIdentifier)
             throws InvalidConfigException {
         Config.loadConfig(this);
+    }
+
+    @Override
+    public void loadConfig(String s) {
+
+    }
+
+    @Override
+    public void loadConfig(String s, Set<LOG_LEVEL> set) {
+
     }
 
     @Override
@@ -176,6 +191,11 @@ public class Start
     @Override
     public void stopLogging() {
         // no op
+    }
+
+    @Override
+    public void initStorage() {
+
     }
 
     @Override
@@ -448,6 +468,16 @@ public class Start
     }
 
     @Override
+    public KeyValueInfo getKeyValue(String s) throws StorageQueryException {
+        return null;
+    }
+
+    @Override
+    public void setKeyValue(String s, KeyValueInfo keyValueInfo) throws StorageQueryException {
+
+    }
+
+    @Override
     public void createNewSession(TenantIdentifier tenantIdentifier, String sessionHandle, String userId,
                                  String refreshTokenHash2,
                                  JsonObject userDataInDatabase, long expiry, JsonObject userDataInJWT,
@@ -529,12 +559,52 @@ public class Start
     }
 
     @Override
+    public void createNewSession(String s, String s1, String s2, JsonObject jsonObject, long l, JsonObject jsonObject1, long l1) throws StorageQueryException {
+
+    }
+
+    @Override
+    public void deleteSessionsOfUser(String s) throws StorageQueryException {
+
+    }
+
+    @Override
+    public int getNumberOfSessions() throws StorageQueryException {
+        return 0;
+    }
+
+    @Override
+    public int deleteSession(String[] strings) throws StorageQueryException {
+        return 0;
+    }
+
+    @Override
+    public String[] getAllNonExpiredSessionHandlesForUser(String s) throws StorageQueryException {
+        return new String[0];
+    }
+
+    @Override
     public void deleteAllExpiredSessions() throws StorageQueryException {
         try {
             SessionQueries.deleteAllExpiredSessions(this);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public SessionInfo getSession(String s) throws StorageQueryException {
+        return null;
+    }
+
+    @Override
+    public int updateSession(String s, @org.jetbrains.annotations.Nullable JsonObject jsonObject, @org.jetbrains.annotations.Nullable JsonObject jsonObject1) throws StorageQueryException {
+        return 0;
+    }
+
+    @Override
+    public void removeAccessTokenSigningKeysBefore(long l) throws StorageQueryException {
+
     }
 
     @Override
@@ -571,6 +641,11 @@ public class Start
     @Override
     public void setStorageLayerEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    @Override
+    public boolean canBeUsed(String s) {
+        return false;
     }
 
     @Override
@@ -2165,6 +2240,16 @@ public class Start
     }
 
     @Override
+    public JsonObject getUserMetadata(String s) throws StorageQueryException {
+        return null;
+    }
+
+    @Override
+    public int deleteUserMetadata(String s) throws StorageQueryException {
+        return 0;
+    }
+
+    @Override
     public JsonObject getUserMetadata(AppIdentifier appIdentifier, String userId) throws StorageQueryException {
         try {
             return UserMetadataQueries.getUserMetadata(this, appIdentifier, userId);
@@ -2228,6 +2313,51 @@ public class Start
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public void addRoleToUser(String s, String s1) throws StorageQueryException, UnknownRoleException, DuplicateUserRoleMappingException {
+
+    }
+
+    @Override
+    public String[] getRolesForUser(String s) throws StorageQueryException {
+        return new String[0];
+    }
+
+    @Override
+    public String[] getUsersForRole(String s) throws StorageQueryException {
+        return new String[0];
+    }
+
+    @Override
+    public String[] getPermissionsForRole(String s) throws StorageQueryException {
+        return new String[0];
+    }
+
+    @Override
+    public String[] getRolesThatHavePermission(String s) throws StorageQueryException {
+        return new String[0];
+    }
+
+    @Override
+    public boolean deleteRole(String s) throws StorageQueryException {
+        return false;
+    }
+
+    @Override
+    public String[] getRoles() throws StorageQueryException {
+        return new String[0];
+    }
+
+    @Override
+    public boolean doesRoleExist(String s) throws StorageQueryException {
+        return false;
+    }
+
+    @Override
+    public int deleteAllRolesForUser(String s) throws StorageQueryException {
+        return 0;
     }
 
     @Override
@@ -3188,6 +3318,16 @@ public class Start
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public boolean isUserIdBeingUsedInNonAuthRecipe(String s, String s1) throws StorageQueryException {
+        return false;
+    }
+
+    @Override
+    public void addInfoToNonAuthRecipesBasedOnUserId(String s, String s1) throws StorageQueryException {
+
     }
 
     @Override
