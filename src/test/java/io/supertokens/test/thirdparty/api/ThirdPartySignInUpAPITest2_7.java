@@ -17,6 +17,8 @@
 package io.supertokens.test.thirdparty.api;
 
 import com.google.gson.JsonObject;
+
+import io.supertokens.ActiveUsers;
 import io.supertokens.ProcessState;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -24,6 +26,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -69,6 +72,8 @@ public class ThirdPartySignInUpAPITest2_7 {
             return;
         }
 
+        long startTs = System.currentTimeMillis();
+
         JsonObject response = Utils.signInUpRequest_2_7(process, "test@example.com", true, "testThirdPartyId",
                 "testThirdPartyUserId");
         checkSignInUpResponse(response, "testThirdPartyId", "testThirdPartyUserId", "test@example.com", true);
@@ -78,6 +83,10 @@ public class ThirdPartySignInUpAPITest2_7 {
             assertTrue(EmailVerification.isEmailVerified(process.getProcess(), user.get("id").getAsString(),
                     user.get("email").getAsString()));
         }
+
+        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
+        assert (activeUsers == 1);
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
@@ -125,11 +134,14 @@ public class ThirdPartySignInUpAPITest2_7 {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
+
+        long startTs = System.currentTimeMillis();
+
         {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signinup", null, 1000, 1000, null,
-                        Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                        SemVer.v2_7.get(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400
@@ -150,7 +162,7 @@ public class ThirdPartySignInUpAPITest2_7 {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signinup", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                        SemVer.v2_7.get(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400
@@ -166,7 +178,7 @@ public class ThirdPartySignInUpAPITest2_7 {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signinup", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                        SemVer.v2_7.get(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage()
@@ -174,6 +186,10 @@ public class ThirdPartySignInUpAPITest2_7 {
                                 + "in " + "JSON input"));
             }
         }
+
+        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
+        assert (activeUsers == 0);
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
@@ -202,7 +218,7 @@ public class ThirdPartySignInUpAPITest2_7 {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signinup", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                        SemVer.v2_7.get(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400
@@ -217,7 +233,7 @@ public class ThirdPartySignInUpAPITest2_7 {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signinup", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                        SemVer.v2_7.get(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400

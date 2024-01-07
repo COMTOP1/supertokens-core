@@ -22,6 +22,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -54,7 +55,7 @@ public class APIKeysTest {
     // * - set API key and check that config.getAPIKeys() does not return null
     @Test
     public void testGetApiKeysDoesNotReturnNullWhenAPIKeyIsSet() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("api_keys", "abctijenbogweg=-2438243u98"); // set api_keys
 
@@ -73,7 +74,7 @@ public class APIKeysTest {
     // * - don't set API key and check that config.getAPIKeys() returns null
     @Test
     public void testGetApiKeysReturnsNullWhenAPIKeyIsNotSet() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -87,7 +88,7 @@ public class APIKeysTest {
     // * - set an invalid API key and check that an error is thrown.
     @Test
     public void testErrorIsThrownWhenInvalidApiKeyIsSet() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         // api key length less that minimum length 20
         Utils.setValueInConfig("api_keys", "abc"); // set api_keys
@@ -95,7 +96,7 @@ public class APIKeysTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         ProcessState.EventAndException event = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(event);
-        assertEquals(event.exception.getMessage(),
+        assertEquals(event.exception.getCause().getMessage(),
                 "One of the API keys is too short. Please use at least 20 characters");
 
         process.kill();
@@ -109,7 +110,7 @@ public class APIKeysTest {
 
         event = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(event);
-        assertEquals(event.exception.getMessage(),
+        assertEquals(event.exception.getCause().getMessage(),
                 "Invalid characters in API key. Please only use '=', '-' and alpha-numeric (including capitals)");
 
         process.kill();
@@ -120,7 +121,7 @@ public class APIKeysTest {
     // * - set one valid, and one invalid API key and check error is thrown
     @Test
     public void testSettingValidAndInvalidApiKeysAndErrorIsThrown() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         String validKey = "abdein30934=-DJNIigwe39";
         String invalidKey = "%93*4=JN39";
 
@@ -129,7 +130,7 @@ public class APIKeysTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         ProcessState.EventAndException event = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(event);
-        assertEquals(event.exception.getMessage(),
+        assertEquals(event.exception.getCause().getMessage(),
                 "One of the API keys is too short. Please use at least 20 characters");
 
         process.kill();
@@ -141,7 +142,7 @@ public class APIKeysTest {
     // * with key and it should succeed and then send with wrong key and check it fails).
     @Test
     public void testCreatingSessionWithAndWithoutAPIKey() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         String apiKey = "hg40239oirjgBHD9450=Beew123-";
         Utils.setValueInConfig("api_keys", apiKey); // set api_keys
@@ -163,7 +164,7 @@ public class APIKeysTest {
 
         try {
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
-                    request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(), null);
+                    request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 401
@@ -171,14 +172,14 @@ public class APIKeysTest {
         }
 
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_21.get(),
                 apiKey, "");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
 
         try {
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
-                    request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(), "abd#%034t0g4in40t40v0j");
+                    request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), "abd#%034t0g4in40t40v0j");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 401
@@ -192,7 +193,7 @@ public class APIKeysTest {
     // * - set API key and check that you can still call /config and /hello without it
     @Test
     public void testSettingAPIKeyAndCallingConfigAndHelloWithoutIt() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         String apiKey = "hg40239oirjgBHD9450=Beew123-";
         Utils.setValueInConfig("api_keys", apiKey); // set api_keys
@@ -201,14 +202,14 @@ public class APIKeysTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         String response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/hello", null, 1000, 1000, null, Utils.getCdiVersionLatestForTests(), "");
+                "http://localhost:3567/hello", null, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), "");
         assertEquals(response, "Hello");
 
         // map to store pid as parameter
         Map<String, String> map = new HashMap<>();
         map.put("pid", ProcessHandle.current().pid() + "");
         JsonObject response2 = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/config", map, 1000, 1000, null, Utils.getCdiVersionLatestForTests(), "");
+                "http://localhost:3567/config", map, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), "");
 
         File f = new File(CLIOptions.get(process.getProcess()).getInstallationPath() + "config.yaml");
         String path = f.getAbsolutePath();
@@ -224,7 +225,7 @@ public class APIKeysTest {
     // * key, it fails
     @Test
     public void testSettingMultipleAPIKeys() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         String apiKey1 = "hg40239oirjgBHD9450=Beew123-1";
         String apiKey2 = "hg40239oirjgBHD9450=Beew123-2";
@@ -249,19 +250,19 @@ public class APIKeysTest {
 
         // check that any one of the keys can be used
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_21.get(),
                 apiKey1, "");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
 
         sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_21.get(),
                 apiKey2, "");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
 
         sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_21.get(),
                 apiKey3, "");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
@@ -269,7 +270,7 @@ public class APIKeysTest {
         // sending request with no api key
         try {
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
-                    request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(), null);
+                    request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 401
@@ -279,7 +280,7 @@ public class APIKeysTest {
         // sending request with invalid api key
         try {
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
-                    request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(), "abd#%034t0g4in40t40v0j");
+                    request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), "abd#%034t0g4in40t40v0j");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 401
@@ -294,7 +295,7 @@ public class APIKeysTest {
     // * - set API key and check that request with " key ", " key" and "key" work
     @Test
     public void testSettingMultipleAPIKeysWithSpacing() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         String apiKey1 = "hg40239oirjgBHD9450=Beew123-1";
         String apiKey2 = "hg40239oirjgBHD9450=Beew123-2";
@@ -302,7 +303,7 @@ public class APIKeysTest {
         String apiKey4 = "hg40239oirjgBHD9450=Beew123-4";
 
         Utils.setValueInConfig("api_keys", " " + apiKey1 + ", " + apiKey2 + ", " + apiKey3 + "," + apiKey4); // set
-                                                                                                             // api_keys
+        // api_keys
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -318,31 +319,32 @@ public class APIKeysTest {
         request.add("userDataInJWT", userDataInJWT);
         request.add("userDataInDatabase", userDataInDatabase);
         request.addProperty("enableAntiCsrf", false);
+        request.addProperty("useStaticKey", false);
 
         // check that any one of the keys can be used
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_21.get(),
                 " " + apiKey1 + " ", "");
 
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
 
         sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_21.get(),
                 " " + apiKey2, "");
 
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
 
         sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_21.get(),
                 apiKey3, "");
 
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
 
         sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_21.get(),
                 apiKey4, "");
 
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
@@ -353,7 +355,7 @@ public class APIKeysTest {
     }
 
     public static void checkSessionResponse(JsonObject response, TestingProcessManager.TestingProcess process,
-            String userId, JsonObject userDataInJWT) {
+                                            String userId, JsonObject userDataInJWT) {
         assertNotNull(response.get("session").getAsJsonObject().get("handle").getAsString());
         assertEquals(response.get("session").getAsJsonObject().get("userId").getAsString(), userId);
         assertEquals(response.get("session").getAsJsonObject().get("userDataInJWT").getAsJsonObject().toString(),
@@ -369,21 +371,5 @@ public class APIKeysTest {
         assertTrue(response.get("refreshToken").getAsJsonObject().has("expiry"));
         assertTrue(response.get("refreshToken").getAsJsonObject().has("createdTime"));
         assertEquals(response.get("refreshToken").getAsJsonObject().entrySet().size(), 3);
-
-        assertTrue(response.get("idRefreshToken").getAsJsonObject().has("token"));
-        assertTrue(response.get("idRefreshToken").getAsJsonObject().has("expiry"));
-        assertTrue(response.get("idRefreshToken").getAsJsonObject().has("createdTime"));
-        assertEquals(response.get("idRefreshToken").getAsJsonObject().entrySet().size(), 3);
-
-        assertTrue(response.has("jwtSigningPublicKey"));
-        assertTrue(response.has("jwtSigningPublicKeyExpiryTime"));
-        assertTrue(response.has("jwtSigningPublicKeyList"));
-        JsonArray respPubKeyList = response.get("jwtSigningPublicKeyList").getAsJsonArray();
-        for (int i = 0; i < respPubKeyList.size(); ++i) {
-            assertTrue(respPubKeyList.get(i).getAsJsonObject().has("publicKey"));
-            assertTrue(respPubKeyList.get(i).getAsJsonObject().has("expiryTime"));
-            assertTrue(respPubKeyList.get(i).getAsJsonObject().has("createdAt"));
-            assertEquals(respPubKeyList.get(i).getAsJsonObject().entrySet().size(), 3);
-        }
     }
 }

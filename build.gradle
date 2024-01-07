@@ -19,8 +19,7 @@ compileTestJava { options.encoding = "UTF-8" }
 //    }
 //}
 
-version = "4.1.0"
-
+version = "7.0.16"
 
 repositories {
     mavenCentral()
@@ -28,20 +27,23 @@ repositories {
 
 dependencies {
 
+    implementation files('/Users/liam/Code/Java/supertokens-plugin-interface/build/libs/plugin-interface-4.0.5.jar')
+
     // https://mvnrepository.com/artifact/com.google.code.gson/gson
+    // if this changes, remember to also change in the ee folder's build.gradle
     implementation group: 'com.google.code.gson', name: 'gson', version: '2.3.1'
 
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.dataformat/jackson-dataformat-yaml
-    implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: '2.10.0'
+    implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: '2.14.0'
 
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
-    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.10.0'
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.14.0'
 
     // https://mvnrepository.com/artifact/ch.qos.logback/logback-classic
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
 
     // https://mvnrepository.com/artifact/org.apache.tomcat.embed/tomcat-embed-core
-    implementation group: 'org.apache.tomcat.embed', name: 'tomcat-embed-core', version: '8.5.47'
+    implementation group: 'org.apache.tomcat.embed', name: 'tomcat-embed-core', version: '10.1.1'
 
     // https://mvnrepository.com/artifact/com.google.code.findbugs/jsr305
     implementation group: 'com.google.code.findbugs', name: 'jsr305', version: '3.0.2'
@@ -59,13 +61,22 @@ dependencies {
     implementation group: 'de.mkammerer', name: 'argon2-jvm', version: '2.11'
 
     // https://mvnrepository.com/artifact/com.auth0/java-jwt
-    implementation 'com.auth0:java-jwt:4.0.0'
+    implementation 'com.auth0:java-jwt:4.4.0'
 
     // https://mvnrepository.com/artifact/com.lambdaworks/scrypt
     implementation group: 'com.lambdaworks', name: 'scrypt', version: '1.4.0'
 
-    compileOnly project(":supertokens-plugin-interface")
-    testImplementation project(":supertokens-plugin-interface")
+    // https://mvnrepository.com/artifact/com.eatthepath/java-otp
+    implementation group: 'com.eatthepath', name: 'java-otp', version: '0.4.0'
+
+    // https://mvnrepository.com/artifact/commons-codec/commons-codec
+    implementation group: 'commons-codec', name: 'commons-codec', version: '1.15'
+
+    // https://mvnrepository.com/artifact/com.googlecode.libphonenumber/libphonenumber/
+    implementation group: 'com.googlecode.libphonenumber', name: 'libphonenumber', version: '8.13.25'
+
+//    compileOnly project(":supertokens-plugin-interface")
+//    testImplementation project(":supertokens-plugin-interface")
 
     // this is so that we can find plugin-interface jar while testing
     testImplementation 'junit:junit:4.12'
@@ -158,4 +169,3 @@ tasks.withType(Test) {
         }
     }
 }
-  

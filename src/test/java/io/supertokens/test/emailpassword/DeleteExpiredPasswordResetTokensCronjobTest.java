@@ -21,8 +21,10 @@ import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.cronjobs.deleteExpiredPasswordResetTokens.DeleteExpiredPasswordResetTokens;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -50,43 +52,43 @@ public class DeleteExpiredPasswordResetTokensCronjobTest {
 
     @Test
     public void checkingCronJob() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         CronTaskTest.getInstance(process.getProcess())
-                .setIntervalInSeconds(DeleteExpiredPasswordResetTokens.RESOURCE_KEY, 2);
+                .setIntervalInSeconds(DeleteExpiredPasswordResetTokens.RESOURCE_KEY, 1);
+        Utils.setValueInConfig("password_reset_token_lifetime", "4000");
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        UserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
-        String tok = EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
-        String tok2 = EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
+        String tok = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getSupertokensUserId());
+        String tok2 = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getSupertokensUserId());
 
-        io.supertokens.emailpassword.EmailPasswordTest.getInstance(process.getProcess())
-                .setPasswordResetTokenLifetime(10);
+        Thread.sleep(2000);
 
-        EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
-        EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
+        String tok3 = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getSupertokensUserId());
+        String tok4 = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getSupertokensUserId());
 
-        assert (StorageLayer.getEmailPasswordStorage(process.getProcess())
-                .getAllPasswordResetTokenInfoForUser(user.id).length == 4);
+        assert (((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
+                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.getSupertokensUserId()).length == 4);
 
-        Thread.sleep(3000);
+        Thread.sleep(3500);
 
-        PasswordResetTokenInfo[] tokens = StorageLayer.getEmailPasswordStorage(process.getProcess())
-                .getAllPasswordResetTokenInfoForUser(user.id);
+        PasswordResetTokenInfo[] tokens = ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
+                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.getSupertokensUserId());
 
         assert (tokens.length == 2);
 
         assert (!tokens[0].token.equals(tokens[1].token));
-        assert (tokens[0].token.equals(io.supertokens.utils.Utils.hashSHA256(tok))
-                || tokens[0].token.equals(io.supertokens.utils.Utils.hashSHA256(tok2)));
-        assert (tokens[1].token.equals(io.supertokens.utils.Utils.hashSHA256(tok))
-                || tokens[1].token.equals(io.supertokens.utils.Utils.hashSHA256(tok2)));
+        assert (tokens[0].token.equals(io.supertokens.utils.Utils.hashSHA256(tok3))
+                || tokens[0].token.equals(io.supertokens.utils.Utils.hashSHA256(tok4)));
+        assert (tokens[1].token.equals(io.supertokens.utils.Utils.hashSHA256(tok3))
+                || tokens[1].token.equals(io.supertokens.utils.Utils.hashSHA256(tok4)));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

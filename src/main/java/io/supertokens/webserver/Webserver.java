@@ -18,15 +18,17 @@ package io.supertokens.webserver;
 
 import io.supertokens.Main;
 import io.supertokens.OperatingSystem;
-import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.output.Logging;
-import io.supertokens.webserver.api.core.UsersAPI;
-import io.supertokens.webserver.api.core.UsersCountAPI;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.webserver.api.accountlinking.*;
 import io.supertokens.webserver.api.core.*;
+import io.supertokens.webserver.api.dashboard.*;
 import io.supertokens.webserver.api.emailpassword.UserAPI;
 import io.supertokens.webserver.api.emailpassword.*;
 import io.supertokens.webserver.api.emailverification.GenerateEmailVerificationTokenAPI;
@@ -35,10 +37,17 @@ import io.supertokens.webserver.api.emailverification.UnverifyEmailAPI;
 import io.supertokens.webserver.api.emailverification.VerifyEmailAPI;
 import io.supertokens.webserver.api.jwt.JWKSAPI;
 import io.supertokens.webserver.api.jwt.JWTSigningAPI;
+import io.supertokens.webserver.api.multitenancy.*;
+import io.supertokens.webserver.api.multitenancy.thirdparty.CreateOrUpdateThirdPartyConfigAPI;
+import io.supertokens.webserver.api.multitenancy.thirdparty.RemoveThirdPartyConfigAPI;
 import io.supertokens.webserver.api.passwordless.*;
 import io.supertokens.webserver.api.session.*;
+import io.supertokens.webserver.api.thirdparty.TenantMappingAPI;
+import io.supertokens.webserver.api.thirdparty.DeleteTenantMappingAPI;
 import io.supertokens.webserver.api.thirdparty.GetUsersByEmailAPI;
+import io.supertokens.webserver.api.thirdparty.ListTenantMappingConfigsAPI;
 import io.supertokens.webserver.api.thirdparty.SignInUpAPI;
+import io.supertokens.webserver.api.totp.*;
 import io.supertokens.webserver.api.useridmapping.RemoveUserIdMappingAPI;
 import io.supertokens.webserver.api.useridmapping.UpdateExternalUserIdInfoAPI;
 import io.supertokens.webserver.api.useridmapping.UserIdMappingAPI;
@@ -49,17 +58,13 @@ import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.connector.Connector;
 import org.apache.catalina.core.StandardContext;
-import org.apache.catalina.filters.RemoteAddrFilter;
 import org.apache.catalina.startup.Tomcat;
-import org.apache.tomcat.util.descriptor.web.FilterDef;
-import org.apache.tomcat.util.descriptor.web.FilterMap;
 import org.apache.tomcat.util.http.fileupload.FileUtils;
 
 import java.io.File;
 import java.util.UUID;
 import java.util.logging.Handler;
 import java.util.logging.Logger;
-import java.util.regex.PatternSyntaxException;
 
 public class Webserver extends ResourceDistributor.SingletonResource {
 
@@ -74,6 +79,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
     // contextPath is the prefix to all paths for all URLs. So it's "" for us.
     private String CONTEXT_PATH = "";
     private final Main main;
+    final PathRouter pathRouter;
 
     private final WebServerLogging logging;
     private TomcatReference tomcatReference;
@@ -81,14 +87,17 @@ public class Webserver extends ResourceDistributor.SingletonResource {
     private Webserver(Main main) {
         this.main = main;
         this.logging = new WebServerLogging(main);
+        this.pathRouter = new PathRouter(main);
     }
 
     public static Webserver getInstance(Main main) {
-        Webserver instance = (Webserver) main.getResourceDistributor().getResource(RESOURCE_KEY);
-        if (instance == null) {
-            instance = (Webserver) main.getResourceDistributor().setResource(RESOURCE_KEY, new Webserver(main));
+        try {
+            return (Webserver) main.getResourceDistributor()
+                    .getResource(new TenantIdentifier(null, null, null), RESOURCE_KEY);
+        } catch (TenantOrAppNotFoundException e) {
+            return (Webserver) main.getResourceDistributor()
+                    .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY, new Webserver(main));
         }
-        return instance;
     }
 
     public void start() {
@@ -101,7 +110,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
             webserverTemp.mkdir();
         }
 
-        CONTEXT_PATH = Config.getConfig(main).getBasePath();
+        CONTEXT_PATH = Config.getBaseConfig(main).getBasePath();
 
         // this will make it so that if there is a failure, then tomcat will throw an
         // error...
@@ -116,9 +125,9 @@ public class Webserver extends ResourceDistributor.SingletonResource {
 
         // set thread pool size and port
         Connector connector = new Connector();
-        connector.setAttribute("maxThreads", Config.getConfig(main).getMaxThreadPoolSize());
-        connector.setPort(Config.getConfig(main).getPort(main));
-        connector.setAttribute("address", Config.getConfig(main).getHost(main));
+        connector.setProperty("maxThreads", Config.getBaseConfig(main).getMaxThreadPoolSize() + "");
+        connector.setPort(Config.getBaseConfig(main).getPort(main));
+        connector.setProperty("address", Config.getBaseConfig(main).getHost(main));
 
         tomcat.setConnector(connector);
 
@@ -133,15 +142,12 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         // calling stop
         context.setUnloadDelay(5000);
 
-        // we add remote address filter so that only certain IPs can query the core.
-        addRemoteAddressFilter(context, main);
-
         // start tomcat
         try {
             tomcat.start();
         } catch (LifecycleException e) {
             // reusing same port OR not right permissions given.
-            Logging.error(main, null, false, e);
+            Logging.error(main, TenantIdentifierWithStorage.BASE_TENANT, null, false, e);
             throw new QuitProgramException(
                     "Error while starting webserver. Possible reasons:\n- Another instance of SuperTokens is already "
                             + "running on the same port. If you want to run another instance, please pass a new config "
@@ -153,52 +159,13 @@ public class Webserver extends ResourceDistributor.SingletonResource {
 
         tomcatReference = new TomcatReference(tomcat, context);
 
-        try {
-            setupRoutes();
-        } catch (Exception e) {
-            Logging.error(main, null, false, e);
-            throw new QuitProgramException("API routes not initialised properly: " + e.getMessage());
-        }
+        setupRoutes();
     }
 
-    private void addRemoteAddressFilter(StandardContext context, Main main) {
-        String allow = Config.getConfig(main).getIpAllowRegex();
-        String deny = Config.getConfig(main).getIpDenyRegex();
-        if (allow == null && deny == null) {
-            return;
-        }
-        ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.ADDING_REMOTE_ADDRESS_FILTER, null);
-        RemoteAddrFilter filter = new RemoteAddrFilter();
-        if (allow != null) {
-            try {
-                filter.setAllow(allow);
-            } catch (PatternSyntaxException e) {
-                throw new QuitProgramException("Provided regular expression is invalid for ip_allow_regex config");
-            }
-        }
-        if (deny != null) {
-            try {
-                filter.setDeny(deny);
-            } catch (PatternSyntaxException e) {
-                throw new QuitProgramException("Provided regular expression is invalid for ip_deny_regex config");
-            }
-        }
-        filter.setDenyStatus(403);
-
-        FilterDef filterDefinition = new FilterDef();
-        filterDefinition.setFilter(filter);
-        filterDefinition.setFilterName(RemoteAddrFilter.class.getSimpleName());
-        context.addFilterDef(filterDefinition);
-
-        FilterMap filterMapping = new FilterMap();
-        filterMapping.setFilterName(RemoteAddrFilter.class.getSimpleName());
-        filterMapping.addURLPattern("*");
-        context.addFilterMap(filterMapping);
-    }
-
-    private void setupRoutes() throws Exception {
+    private void setupRoutes() {
         addAPI(new NotFoundOrHelloAPI(main));
         addAPI(new HelloAPI(main));
+        addAPI(new JWKSPublicAPI(main));
         addAPI(new SessionAPI(main));
         addAPI(new VerifySessionAPI(main));
         addAPI(new RefreshSessionAPI(main));
@@ -227,6 +194,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new ConsumeCodeAPI(main));
         addAPI(new TelemetryAPI(main));
         addAPI(new UsersCountAPI(main));
+        addAPI(new ActiveUsersCountAPI(main));
         addAPI(new UsersAPI(main));
         addAPI(new DeleteUserAPI(main));
         addAPI(new RevokeAllTokensForUserAPI(main));
@@ -247,21 +215,66 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new GetRolesAPI(main));
         addAPI(new UserIdMappingAPI(main));
         addAPI(new RemoveUserIdMappingAPI(main));
+        addAPI(new CreateOrUpdateTotpDeviceAPI(main));
+        addAPI(new VerifyTotpDeviceAPI(main));
+        addAPI(new VerifyTotpAPI(main));
+        addAPI(new RemoveTotpDeviceAPI(main));
+        addAPI(new GetTotpDevicesAPI(main));
+        addAPI(new ImportTotpDeviceAPI(main));
         addAPI(new UpdateExternalUserIdInfoAPI(main));
         addAPI(new ImportUserWithPasswordHashAPI(main));
-        // deprecated APIs:
-        addAPI(new RecipeRouter(main, new io.supertokens.webserver.api.emailpassword.UsersAPI(main),
-                new io.supertokens.webserver.api.thirdparty.UsersAPI(main)));
-        addAPI(new RecipeRouter(main, new io.supertokens.webserver.api.emailpassword.UsersCountAPI(main),
-                new io.supertokens.webserver.api.thirdparty.UsersCountAPI(main)));
-    }
+        addAPI(new TenantMappingAPI(main));
+        addAPI(new ListTenantMappingConfigsAPI(main));
+        addAPI(new DeleteTenantMappingAPI(main));
+        addAPI(new LicenseKeyAPI(main));
+        addAPI(new EEFeatureFlagAPI(main));
+        addAPI(new DashboardUserAPI(main));
+        addAPI(new VerifyDashboardUserSessionAPI(main));
+        addAPI(new DashboardSignInAPI(main));
+        addAPI(new RevokeSessionAPI(main));
+        addAPI(new GetDashboardUsersAPI(main));
+        addAPI(new GetDashboardSessionsForUserAPI(main));
+        addAPI(new SearchTagsAPI(main));
 
-    public void addAPI(WebserverAPI api) {
+        addAPI(new CreateOrUpdateConnectionUriDomainAPI(main));
+        addAPI(new RemoveConnectionUriDomainAPI(main));
+        addAPI(new ListConnectionUriDomainsAPI(main));
+
+        addAPI(new CreateOrUpdateAppAPI(main));
+        addAPI(new RemoveAppAPI(main));
+        addAPI(new ListAppsAPI(main));
+
+        addAPI(new CreateOrUpdateTenantOrGetTenantAPI(main));
+        addAPI(new RemoveTenantAPI(main));
+        addAPI(new ListTenantsAPI(main));
+
+        addAPI(new CreateOrUpdateThirdPartyConfigAPI(main));
+        addAPI(new RemoveThirdPartyConfigAPI(main));
+
+        addAPI(new AssociateUserToTenantAPI(main));
+        addAPI(new DisassociateUserFromTenant(main));
+
+        addAPI(new GetUserByIdAPI(main));
+        addAPI(new ListUsersByAccountInfoAPI(main));
+
+        addAPI(new CanCreatePrimaryUserAPI(main));
+        addAPI(new CreatePrimaryUserAPI(main));
+        addAPI(new CanLinkAccountsAPI(main));
+        addAPI(new LinkAccountsAPI(main));
+        addAPI(new UnlinkAccountAPI(main));
+        addAPI(new ConsumeResetPasswordAPI(main));
+
+        addAPI(new RequestStatsAPI(main));
+
         StandardContext context = tomcatReference.getContext();
         Tomcat tomcat = tomcatReference.getTomcat();
 
-        tomcat.addServlet(CONTEXT_PATH, api.getPath(), api);
-        context.addServletMappingDecoded(api.getPath(), api.getPath());
+        tomcat.addServlet(CONTEXT_PATH, pathRouter.getPath(), pathRouter);
+        context.addServletMappingDecoded(pathRouter.getPath(), pathRouter.getPath());
+    }
+
+    public void addAPI(WebserverAPI api) {
+        this.pathRouter.addAPI(api);
     }
 
     public void stop() {
@@ -270,7 +283,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
             if (tomcat.getServer() == null) {
                 return;
             }
-            Logging.info(main, "Stopping webserver...", true);
+            Logging.info(main, TenantIdentifier.BASE_TENANT, "Stopping webserver...", true);
             if (tomcat.getServer().getState() != LifecycleState.DESTROYED) {
                 if (tomcat.getServer().getState() != LifecycleState.STOPPED) {
                     try {
@@ -278,13 +291,13 @@ public class Webserver extends ResourceDistributor.SingletonResource {
                         // amount is defined by unloadDelay
                         tomcat.stop();
                     } catch (LifecycleException e) {
-                        Logging.error(main, "Stop tomcat error.", false, e);
+                        Logging.error(main, TenantIdentifier.BASE_TENANT, "Stop tomcat error.", false, e);
                     }
                 }
                 try {
                     tomcat.destroy();
                 } catch (LifecycleException e) {
-                    Logging.error(main, "Destroy tomcat error.", false, e);
+                    Logging.error(main, TenantIdentifier.BASE_TENANT, "Destroy tomcat error.", false, e);
                 }
             }
         }

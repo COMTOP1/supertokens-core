@@ -18,12 +18,16 @@ package io.supertokens.test.thirdparty.api;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.thirdparty.ThirdParty;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -73,7 +77,7 @@ public class ThirdPartyGetUserAPITest2_7 {
         {
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/user",
-                        new HashMap<>(), 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                        new HashMap<>(), 1000, 1000, null, SemVer.v2_7.get(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage()
@@ -88,7 +92,7 @@ public class ThirdPartyGetUserAPITest2_7 {
             QueryParams.put("thirdPartyId", "testThirdPartId");
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/user",
-                        QueryParams, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                        QueryParams, 1000, 1000, null, SemVer.v2_7.get(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage()
@@ -103,7 +107,7 @@ public class ThirdPartyGetUserAPITest2_7 {
             QueryParams.put("thirdPartyUserId", "testThirdPartyUserId");
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/user",
-                        QueryParams, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                        QueryParams, 1000, 1000, null, SemVer.v2_7.get(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage()
@@ -138,11 +142,11 @@ public class ThirdPartyGetUserAPITest2_7 {
         // query with userId
         {
             HashMap<String, String> QueryParams = new HashMap<>();
-            QueryParams.put("userId", signUpResponse.user.id);
+            QueryParams.put("userId", signUpResponse.user.getSupertokensUserId());
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user", QueryParams, 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                    SemVer.v2_7.get(), "thirdparty");
             assertEquals("OK", response.get("status").getAsString());
 
             JsonObject userInfo = response.get("user").getAsJsonObject();
@@ -157,7 +161,7 @@ public class ThirdPartyGetUserAPITest2_7 {
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user", QueryParams, 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                    SemVer.v2_7.get(), "thirdparty");
             assertEquals("OK", response.get("status").getAsString());
 
             JsonObject userInfo = response.get("user").getAsJsonObject();
@@ -187,7 +191,7 @@ public class ThirdPartyGetUserAPITest2_7 {
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user", QueryParams, 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                    SemVer.v2_7.get(), "thirdparty");
             assertEquals("UNKNOWN_USER_ID_ERROR", response.get("status").getAsString());
         }
 
@@ -199,9 +203,49 @@ public class ThirdPartyGetUserAPITest2_7 {
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user", QueryParams, 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                    SemVer.v2_7.get(), "thirdparty");
             assertEquals("UNKNOWN_THIRD_PARTY_USER_ERROR", response.get("status").getAsString());
         }
+    }
+
+    @Test
+    public void testGetUserForUsersOfOtherRecipeIds() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo user1 = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
+        Passwordless.CreateCodeResponse user2code = Passwordless.createCode(process.getProcess(), "test@example.com",
+                null, null, null);
+        AuthRecipeUserInfo user2 = Passwordless.consumeCode(process.getProcess(), user2code.deviceId, user2code.deviceIdHash, user2code.userInputCode, null).user;
+
+        {
+            HashMap<String, String> map = new HashMap<>();
+            map.put("userId", user1.getSupertokensUserId());
+
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user", map, 1000, 1000, null, SemVer.v2_7.get(),
+                    "thirdparty");
+            assertEquals(response.get("status").getAsString(), "UNKNOWN_USER_ID_ERROR");
+        }
+
+        {
+            HashMap<String, String> map = new HashMap<>();
+            map.put("userId", user2.getSupertokensUserId());
+
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user", map, 1000, 1000, null, SemVer.v2_7.get(),
+                    "thirdparty");
+            assertEquals(response.get("status").getAsString(), "UNKNOWN_USER_ID_ERROR");
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     public static void checkUser(JsonObject user, String thirdPartyId, String thirdPartyUserId, String email) {

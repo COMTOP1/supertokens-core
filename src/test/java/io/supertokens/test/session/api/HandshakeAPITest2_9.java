@@ -21,13 +21,17 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
+import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.session.accessToken.AccessTokenSigningKey;
-import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.signingkeys.AccessTokenSigningKey;
+import io.supertokens.signingkeys.SigningKeys;
+import io.supertokens.signingkeys.SigningKeys.KeyInfo;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -55,7 +59,7 @@ public class HandshakeAPITest2_9 {
 
     @Test
     public void inputErrorsInHandshakeAPITest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -63,7 +67,7 @@ public class HandshakeAPITest2_9 {
         // null in request body with cdi-version set to 2.0
         try {
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/handshake", null, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
+                    "http://localhost:3567/recipe/handshake", null, 1000, 1000, null, SemVer.v2_9.get(),
                     "session");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 400
@@ -76,7 +80,7 @@ public class HandshakeAPITest2_9 {
 
     @Test
     public void signingKeyHandshakeAPITest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -98,7 +102,7 @@ public class HandshakeAPITest2_9 {
 
         JsonObject handshakeResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/handshake", deviceDriverInfo, 1000, 1000, null,
-                Utils.getCdiVersion2_9ForTests(), "session");
+                SemVer.v2_9.get(), "session");
         checkHandshakeAPIResponse(handshakeResponse, process);
         assertEquals(handshakeResponse.entrySet().size(), 7);
 
@@ -109,7 +113,7 @@ public class HandshakeAPITest2_9 {
 
     @Test
     public void signingKeyHandshakeAPIWithCookiesTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("cookie_domain", "localhost");
 
@@ -133,7 +137,7 @@ public class HandshakeAPITest2_9 {
 
         JsonObject handshakeResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/handshake", deviceDriverInfo, 1000, 1000, null,
-                Utils.getCdiVersion2_9ForTests(), "session");
+                SemVer.v2_9.get(), "session");
         checkHandshakeAPIResponse(handshakeResponse, process);
         assertEquals(handshakeResponse.entrySet().size(), 7);
 
@@ -144,9 +148,9 @@ public class HandshakeAPITest2_9 {
 
     @Test
     public void changingSigningKeyHandshakeAPITest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
-        Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00081"); // 0.00027*3 = 3 seconds
+        Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00081"); // 0.00027*3 = 3 seconds
         Utils.setValueInConfig("access_token_validity", "1"); // 1 second
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -156,11 +160,11 @@ public class HandshakeAPITest2_9 {
                 + "\"version\": \"nDVersion\"" + "}" + "}" + "}";
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/handshake", new JsonParser().parse(jsonInput), 1000, 1000, null,
-                Utils.getCdiVersion2_9ForTests(), "session");
+                SemVer.v2_9.get(), "session");
 
         assertEquals(response.entrySet().size(), 7);
 
-        List<String> keys = AccessTokenSigningKey.getInstance(process.main).getAllKeys().stream()
+        List<String> keys = SigningKeys.getInstance(process.main).getDynamicKeys().stream()
                 .map(key -> new io.supertokens.utils.Utils.PubPriKey(key.value).publicKey).collect(Collectors.toList());
 
         assertEquals(response.get("jwtSigningPublicKey").getAsString(), keys.get(0));
@@ -176,14 +180,14 @@ public class HandshakeAPITest2_9 {
 
         JsonObject changedResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/handshake", new JsonParser().parse(jsonInput), 1000, 1000, null,
-                Utils.getCdiVersion2_9ForTests(), "session");
+                SemVer.v2_9.get(), "session");
 
         assertEquals(changedResponse.entrySet().size(), 7);
 
         // check that changed response has the same signing key as the current signing key and it is different from
         // the previous signing key
 
-        List<String> changedPubKeys = AccessTokenSigningKey.getInstance(process.main).getAllKeys().stream()
+        List<String> changedPubKeys = SigningKeys.getInstance(process.main).getDynamicKeys().stream()
                 .map(key -> new io.supertokens.utils.Utils.PubPriKey(key.value).publicKey).collect(Collectors.toList());
 
         JsonArray changedRespPubKeyList = changedResponse.get("jwtSigningPublicKeyList").getAsJsonArray();
@@ -191,7 +195,6 @@ public class HandshakeAPITest2_9 {
         boolean hasChangedKey = changedRespPubKeyList.size() != respPubKeyList.size();
         for (int i = 0; i < changedRespPubKeyList.size(); ++i) {
             String pubKey = changedRespPubKeyList.get(i).getAsJsonObject().get("publicKey").getAsString();
-
             assertEquals(changedPubKeys.get(i), pubKey);
             hasChangedKey = hasChangedKey || !keys.contains(pubKey);
         }
@@ -206,11 +209,12 @@ public class HandshakeAPITest2_9 {
     }
 
     private static void checkHandshakeAPIResponse(JsonObject response, TestingProcessManager.TestingProcess process)
-            throws StorageQueryException, StorageTransactionLogicException {
+            throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException,
+            UnsupportedJWTSigningAlgorithmException {
         // check status
         assertEquals(response.get("status").getAsString(), "OK");
 
-        List<KeyInfo> allKeys = AccessTokenSigningKey.getInstance(process.main).getAllKeys();
+        List<KeyInfo> allKeys = SigningKeys.getInstance(process.main).getDynamicKeys();
         List<String> pubKeys = allKeys.stream()
                 .map(key -> new io.supertokens.utils.Utils.PubPriKey(key.value).publicKey).collect(Collectors.toList());
 
@@ -232,7 +236,7 @@ public class HandshakeAPITest2_9 {
 
         // check jwtSigningPublicKeyExpiryTime
         assertEquals(response.get("jwtSigningPublicKeyExpiryTime").getAsLong(),
-                AccessTokenSigningKey.getInstance(process.getProcess()).getKeyExpiryTime());
+                SigningKeys.getInstance(process.getProcess()).getDynamicSigningKeyExpiryTime());
 
         // check accessTokenBlacklistingEnabled
         assertEquals(response.get("accessTokenBlacklistingEnabled").getAsBoolean(),

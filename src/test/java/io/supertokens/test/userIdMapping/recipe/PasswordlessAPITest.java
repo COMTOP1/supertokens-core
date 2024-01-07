@@ -16,20 +16,19 @@
 
 package io.supertokens.test.userIdMapping.recipe;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.passwordless.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -56,7 +55,7 @@ public class PasswordlessAPITest {
 
     @Test
     public void testCreatingAPasswordlessUserMapTheirUserIdAndRetrieveUserId() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -75,7 +74,7 @@ public class PasswordlessAPITest {
                     createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode,
                     null);
             assertTrue(consumeCodeResponse.createdNewUser);
-            superTokensUserId = consumeCodeResponse.user.id;
+            superTokensUserId = consumeCodeResponse.user.getSupertokensUserId();
 
             // create mapping
             UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalId, null, false);
@@ -100,7 +99,7 @@ public class PasswordlessAPITest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "passwordless");
+                    SemVer.v2_15.get(), "passwordless");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("user").getAsJsonObject().get("id").getAsString(), externalId);
 
@@ -122,7 +121,7 @@ public class PasswordlessAPITest {
 
     @Test
     public void testCreatingAPasswordlessUserAndRetrieveInfo() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -142,7 +141,7 @@ public class PasswordlessAPITest {
                     createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode,
                     null);
             assertTrue(consumeCodeResponse.createdNewUser);
-            superTokensUserId = consumeCodeResponse.user.id;
+            superTokensUserId = consumeCodeResponse.user.getSupertokensUserId();
 
             // create mapping
             UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalId, null, false);
@@ -161,7 +160,7 @@ public class PasswordlessAPITest {
             query.put("email", email);
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/user", query, 1000, 1000, null, Utils.getCdiVersion2_15ForTests(),
+                    "http://localhost:3567/recipe/user", query, 1000, 1000, null, SemVer.v2_15.get(),
                     "passwordless");
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(externalId, response.get("user").getAsJsonObject().get("id").getAsString());
@@ -175,7 +174,7 @@ public class PasswordlessAPITest {
                 query.put("userId", superTokensUserId);
 
                 JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/user", query, 1000, 1000, null, Utils.getCdiVersion2_15ForTests(),
+                        "http://localhost:3567/recipe/user", query, 1000, 1000, null, SemVer.v2_15.get(),
                         "passwordless");
                 assertEquals("OK", response.get("status").getAsString());
                 assertEquals(externalId, response.get("user").getAsJsonObject().get("id").getAsString());
@@ -187,7 +186,7 @@ public class PasswordlessAPITest {
                 query.put("userId", externalId);
 
                 JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/user", query, 1000, 1000, null, Utils.getCdiVersion2_15ForTests(),
+                        "http://localhost:3567/recipe/user", query, 1000, 1000, null, SemVer.v2_15.get(),
                         "passwordless");
                 assertEquals("OK", response.get("status").getAsString());
                 assertEquals(externalId, response.get("user").getAsJsonObject().get("id").getAsString());
@@ -200,7 +199,7 @@ public class PasswordlessAPITest {
 
     @Test
     public void testCreatingPasswordlessUserWithPhoneNumberAndRetrieveInfo() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -220,7 +219,7 @@ public class PasswordlessAPITest {
                     createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode,
                     null);
             assertTrue(consumeCodeResponse.createdNewUser);
-            superTokensUserId = consumeCodeResponse.user.id;
+            superTokensUserId = consumeCodeResponse.user.getSupertokensUserId();
 
             // create mapping
             UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalId, null, false);
@@ -239,7 +238,7 @@ public class PasswordlessAPITest {
             query.put("phoneNumber", phoneNumber);
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/user", query, 1000, 1000, null, Utils.getCdiVersion2_15ForTests(),
+                    "http://localhost:3567/recipe/user", query, 1000, 1000, null, SemVer.v2_15.get(),
                     "passwordless");
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(externalId, response.get("user").getAsJsonObject().get("id").getAsString());
@@ -251,7 +250,7 @@ public class PasswordlessAPITest {
 
     @Test
     public void testUpdatingPasswordlessUserWithTheirExternalId() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -268,7 +267,7 @@ public class PasswordlessAPITest {
                 null);
         Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.main, response.deviceId,
                 response.deviceIdHash, response.userInputCode, null);
-        superTokensUserId = consumeCodeResponse.user.id;
+        superTokensUserId = consumeCodeResponse.user.getSupertokensUserId();
 
         // map their userId
         UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalId, null, false);
@@ -282,13 +281,13 @@ public class PasswordlessAPITest {
 
             JsonObject updateUserResponse = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "passwordless");
+                    SemVer.v2_15.get(), "passwordless");
             assertEquals(updateUserResponse.get("status").getAsString(), "OK");
 
             // check that user got updated
-            UserInfo userInfo = Passwordless.getUserByEmail(process.main, newEmail);
+            AuthRecipeUserInfo userInfo = Passwordless.getUserByEmail(process.main, newEmail);
             assertNotNull(userInfo);
-            assertEquals(userInfo.id, superTokensUserId);
+            assertEquals(userInfo.getSupertokensUserId(), superTokensUserId);
         }
 
         process.kill();

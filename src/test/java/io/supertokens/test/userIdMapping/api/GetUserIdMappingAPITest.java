@@ -20,13 +20,14 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -67,7 +68,7 @@ public class GetUserIdMappingAPITest {
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map", new HashMap<>(), 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "useridmapping");
+                        SemVer.v2_14.get(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -83,7 +84,7 @@ public class GetUserIdMappingAPITest {
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map", QUERY_PARAM, 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "useridmapping");
+                        SemVer.v2_14.get(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -100,7 +101,7 @@ public class GetUserIdMappingAPITest {
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map", QUERY_PARAM, 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "useridmapping");
+                        SemVer.v2_14.get(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -117,7 +118,7 @@ public class GetUserIdMappingAPITest {
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map", QUERY_PARAM, 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "useridmapping");
+                        SemVer.v2_14.get(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -148,7 +149,7 @@ public class GetUserIdMappingAPITest {
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/userid/map", QUERY_PARAM, 1000, 1000, null,
-                    Utils.getCdiVersion2_14ForTests(), "useridmapping");
+                    SemVer.v2_14.get(), "useridmapping");
             assertEquals(1, response.entrySet().size());
             assertEquals("UNKNOWN_MAPPING_ERROR", response.get("status").getAsString());
         }
@@ -161,7 +162,7 @@ public class GetUserIdMappingAPITest {
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/userid/map", QUERY_PARAM, 1000, 1000, null,
-                    Utils.getCdiVersion2_14ForTests(), "useridmapping");
+                    SemVer.v2_14.get(), "useridmapping");
             assertEquals(1, response.entrySet().size());
             assertEquals("UNKNOWN_MAPPING_ERROR", response.get("status").getAsString());
         }
@@ -174,7 +175,7 @@ public class GetUserIdMappingAPITest {
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/userid/map", QUERY_PARAM, 1000, 1000, null,
-                    Utils.getCdiVersion2_14ForTests(), "useridmapping");
+                    SemVer.v2_14.get(), "useridmapping");
             assertEquals(1, response.entrySet().size());
             assertEquals("UNKNOWN_MAPPING_ERROR", response.get("status").getAsString());
         }
@@ -195,8 +196,8 @@ public class GetUserIdMappingAPITest {
         }
 
         // create a user and map their userId to an external userId
-        UserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        String superTokensUserId = user.id;
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        String superTokensUserId = user.getSupertokensUserId();
         String externalUserId = "externalUserId";
         String externalUserIdInfo = "externalUserIdInfo";
 
@@ -210,7 +211,7 @@ public class GetUserIdMappingAPITest {
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/userid/map", QUERY_PARAM, 1000, 1000, null,
-                    Utils.getCdiVersion2_14ForTests(), "useridmapping");
+                    SemVer.v2_14.get(), "useridmapping");
 
             assertEquals(4, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
@@ -227,7 +228,7 @@ public class GetUserIdMappingAPITest {
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/userid/map", QUERY_PARAM, 1000, 1000, null,
-                    Utils.getCdiVersion2_14ForTests(), "useridmapping");
+                    SemVer.v2_14.get(), "useridmapping");
 
             assertEquals(4, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
@@ -246,7 +247,7 @@ public class GetUserIdMappingAPITest {
 
                 JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map", QUERY_PARAM, 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "useridmapping");
+                        SemVer.v2_14.get(), "useridmapping");
 
                 assertEquals(4, response.entrySet().size());
                 assertEquals("OK", response.get("status").getAsString());
@@ -263,7 +264,7 @@ public class GetUserIdMappingAPITest {
 
                 JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map", QUERY_PARAM, 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "useridmapping");
+                        SemVer.v2_14.get(), "useridmapping");
 
                 assertEquals(4, response.entrySet().size());
                 assertEquals("OK", response.get("status").getAsString());
@@ -289,8 +290,8 @@ public class GetUserIdMappingAPITest {
         }
 
         // create a user and map their userId to an external userId
-        UserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        String superTokensUserId = user.id;
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        String superTokensUserId = user.getSupertokensUserId();
         String externalUserId = "externalUserId";
         String externalUserIdInfo = "externalUserIdInfo";
 
@@ -303,7 +304,7 @@ public class GetUserIdMappingAPITest {
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/userid/map", QUERY_PARAM, 1000, 1000, null,
-                    Utils.getCdiVersion2_14ForTests(), "useridmapping");
+                    SemVer.v2_14.get(), "useridmapping");
 
             assertEquals(4, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
@@ -319,7 +320,7 @@ public class GetUserIdMappingAPITest {
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/userid/map", QUERY_PARAM, 1000, 1000, null,
-                    Utils.getCdiVersion2_14ForTests(), "useridmapping");
+                    SemVer.v2_14.get(), "useridmapping");
 
             assertEquals(4, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
@@ -344,8 +345,8 @@ public class GetUserIdMappingAPITest {
         }
 
         // create a user and map their userId to an external userId
-        UserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        String superTokensUserId = user.id;
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        String superTokensUserId = user.getSupertokensUserId();
         String externalUserId = "externalUserId";
 
         UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null, false);
@@ -356,7 +357,7 @@ public class GetUserIdMappingAPITest {
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/userid/map", QUERY_PARAM, 1000, 1000, null,
-                Utils.getCdiVersion2_14ForTests(), "useridmapping");
+                SemVer.v2_14.get(), "useridmapping");
         assertEquals(3, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
         assertEquals(superTokensUserId, response.get("superTokensUserId").getAsString());

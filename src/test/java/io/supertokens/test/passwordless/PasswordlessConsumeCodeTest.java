@@ -24,10 +24,12 @@ import io.supertokens.passwordless.exceptions.ExpiredUserInputCodeException;
 import io.supertokens.passwordless.exceptions.IncorrectUserInputCodeException;
 import io.supertokens.passwordless.exceptions.RestartFlowException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
 import io.supertokens.pluginInterface.passwordless.PasswordlessStorage;
-import io.supertokens.pluginInterface.passwordless.UserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -37,7 +39,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import static io.supertokens.test.passwordless.PasswordlessUtility.*;
+import static io.supertokens.test.passwordless.PasswordlessUtility.EMAIL;
+import static io.supertokens.test.passwordless.PasswordlessUtility.PHONE_NUMBER;
 import static org.junit.Assert.*;
 
 /**
@@ -65,7 +68,7 @@ public class PasswordlessConsumeCodeTest {
      */
     @Test
     public void testConsumeLinkCode() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -74,7 +77,7 @@ public class PasswordlessConsumeCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
                 null, null);
@@ -86,7 +89,82 @@ public class PasswordlessConsumeCodeTest {
         assertNotNull(consumeCodeResponse);
         checkUserWithConsumeResponse(storage, consumeCodeResponse, EMAIL, null, consumeStart);
 
-        PasswordlessDevice[] devices = storage.getDevicesByEmail(EMAIL);
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        assertEquals(0, devices.length);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    /**
+     * success without existing user - link code with equal signs removed
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testConsumeLinkCodeWithoutEqualSigns() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
+
+        Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
+                null, null);
+        assertNotNull(createCodeResponse);
+
+        assert(!createCodeResponse.deviceIdHash.contains("="));
+        assert(!createCodeResponse.linkCode.contains("="));
+
+        long consumeStart = System.currentTimeMillis();
+        Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.getProcess(), null,
+                createCodeResponse.deviceIdHash, null, createCodeResponse.linkCode);
+        
+        assertNotNull(consumeCodeResponse);
+        checkUserWithConsumeResponse(storage, consumeCodeResponse, EMAIL, null, consumeStart);
+
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        assertEquals(0, devices.length);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    /**
+     * success without existing user - link code with equal signs (padding)
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testConsumeLinkCodeWithEqualSigns() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
+
+        Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
+                null, null);
+        assertNotNull(createCodeResponse);
+
+        long consumeStart = System.currentTimeMillis();
+        Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.getProcess(), null,
+                createCodeResponse.deviceIdHash + "=", null, createCodeResponse.linkCode + "=");
+        
+        assertNotNull(consumeCodeResponse);
+        checkUserWithConsumeResponse(storage, consumeCodeResponse, EMAIL, null, consumeStart);
+
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
         assertEquals(0, devices.length);
 
         process.kill();
@@ -100,7 +178,7 @@ public class PasswordlessConsumeCodeTest {
      */
     @Test
     public void testConsumeUserInputCode() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -109,7 +187,7 @@ public class PasswordlessConsumeCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
                 null, null);
@@ -122,7 +200,7 @@ public class PasswordlessConsumeCodeTest {
         assert (consumeCodeResponse.createdNewUser);
         checkUserWithConsumeResponse(storage, consumeCodeResponse, EMAIL, null, consumeStart);
 
-        PasswordlessDevice[] devices = storage.getDevicesByEmail(EMAIL);
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
         assertEquals(0, devices.length);
 
         process.kill();
@@ -136,7 +214,7 @@ public class PasswordlessConsumeCodeTest {
      */
     @Test
     public void testConsumeUserInputCodeWithExistingUser() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -145,9 +223,9 @@ public class PasswordlessConsumeCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
-        UserInfo user = null;
+        AuthRecipeUserInfo user;
         {
             Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL,
                     null, null, null);
@@ -170,12 +248,12 @@ public class PasswordlessConsumeCodeTest {
                     null);
             assertNotNull(consumeCodeResponse);
             assert (!consumeCodeResponse.createdNewUser);
-            UserInfo user2 = checkUserWithConsumeResponse(storage, consumeCodeResponse, EMAIL, null, 0);
+            AuthRecipeUserInfo user2 = checkUserWithConsumeResponse(storage, consumeCodeResponse, EMAIL, null, 0);
 
             assert (user.equals(user2));
         }
 
-        PasswordlessDevice[] devices = storage.getDevicesByEmail(EMAIL);
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
         assertEquals(0, devices.length);
 
         process.kill();
@@ -189,7 +267,7 @@ public class PasswordlessConsumeCodeTest {
      */
     @Test
     public void testConsumeLinkCodeWithExistingUser() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -198,9 +276,9 @@ public class PasswordlessConsumeCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
-        UserInfo user = null;
+        AuthRecipeUserInfo user;
         {
             Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL,
                     null, null, null);
@@ -221,12 +299,12 @@ public class PasswordlessConsumeCodeTest {
                     createCodeResponse.deviceId, createCodeResponse.deviceIdHash, null, createCodeResponse.linkCode);
             assertNotNull(consumeCodeResponse);
             assert (!consumeCodeResponse.createdNewUser);
-            UserInfo user2 = checkUserWithConsumeResponse(storage, consumeCodeResponse, EMAIL, null, 0);
+            AuthRecipeUserInfo user2 = checkUserWithConsumeResponse(storage, consumeCodeResponse, EMAIL, null, 0);
 
             assert (user.equals(user2));
         }
 
-        PasswordlessDevice[] devices = storage.getDevicesByEmail(EMAIL);
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
         assertEquals(0, devices.length);
 
         process.kill();
@@ -234,13 +312,14 @@ public class PasswordlessConsumeCodeTest {
     }
 
     /**
-     * Check device clean up when user input code is generated via email & phone number
+     * Check device clean up when user input code is generated via email & phone
+     * number
      *
      * @throws Exception
      */
     @Test
     public void testConsumeCodeCleanupUserInputCodeWithEmailAndPhoneNumber() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -249,9 +328,9 @@ public class PasswordlessConsumeCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
-        UserInfo user = null;
+        AuthRecipeUserInfo user;
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
                 null, null);
@@ -261,24 +340,25 @@ public class PasswordlessConsumeCodeTest {
                 createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode, null);
         assertNotNull(consumeCodeResponse);
 
-        user = storage.getUserById(consumeCodeResponse.user.id);
-        Passwordless.updateUser(process.getProcess(), user.id, null, new Passwordless.FieldUpdate(PHONE_NUMBER));
-        user = storage.getUserById(consumeCodeResponse.user.id);
-        assertEquals(user.phoneNumber, PHONE_NUMBER);
+        AuthRecipeUserInfo authUser = storage.getPrimaryUserById(new AppIdentifier(null, null),
+                consumeCodeResponse.user.getSupertokensUserId());
+        Passwordless.updateUser(process.getProcess(), authUser.getSupertokensUserId(), null, new Passwordless.FieldUpdate(PHONE_NUMBER));
+        authUser = storage.getPrimaryUserById(new AppIdentifier(null, null), consumeCodeResponse.user.getSupertokensUserId());
+        assertEquals(authUser.loginMethods[0].phoneNumber, PHONE_NUMBER);
 
         // create code with email twice
         {
-            Passwordless.CreateCodeResponse codeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
+            Passwordless.createCode(process.getProcess(), EMAIL, null,
                     null, null);
         }
         {
-            Passwordless.CreateCodeResponse codeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
+            Passwordless.createCode(process.getProcess(), EMAIL, null,
                     null, null);
         }
 
         // create code with phone number twice
         {
-            Passwordless.CreateCodeResponse codeResponse = Passwordless.createCode(process.getProcess(), null,
+            Passwordless.createCode(process.getProcess(), null,
                     PHONE_NUMBER, null, null);
         }
 
@@ -286,20 +366,21 @@ public class PasswordlessConsumeCodeTest {
                 null, null);
 
         // 4 codes should be available
-        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(PHONE_NUMBER);
+        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(new TenantIdentifier(null, null, null),
+                PHONE_NUMBER);
         assertEquals(2, devices.length);
 
-        devices = storage.getDevicesByEmail(EMAIL);
+        devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
         assertEquals(2, devices.length);
 
         // consume code
-        Passwordless.ConsumeCodeResponse consumeCode = Passwordless.consumeCode(process.getProcess(),
+        Passwordless.consumeCode(process.getProcess(),
                 codeResponse.deviceId, codeResponse.deviceIdHash, codeResponse.userInputCode, null);
 
-        devices = storage.getDevicesByEmail(EMAIL);
+        devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
         assertEquals(0, devices.length);
 
-        devices = storage.getDevicesByPhoneNumber(PHONE_NUMBER);
+        devices = storage.getDevicesByPhoneNumber(new TenantIdentifier(null, null, null), PHONE_NUMBER);
         assertEquals(0, devices.length);
 
         process.kill();
@@ -313,7 +394,7 @@ public class PasswordlessConsumeCodeTest {
      */
     @Test
     public void testConsumeCodeCleanupLinkCodeWithEmailAndPhoneNumber() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -322,9 +403,9 @@ public class PasswordlessConsumeCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
-        UserInfo user = null;
+        AuthRecipeUserInfo user;
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
                 null, null);
@@ -334,24 +415,25 @@ public class PasswordlessConsumeCodeTest {
                 createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode, null);
         assertNotNull(consumeCodeResponse);
 
-        user = storage.getUserById(consumeCodeResponse.user.id);
-        Passwordless.updateUser(process.getProcess(), user.id, null, new Passwordless.FieldUpdate(PHONE_NUMBER));
-        user = storage.getUserById(consumeCodeResponse.user.id);
-        assertEquals(user.phoneNumber, PHONE_NUMBER);
+        AuthRecipeUserInfo authUser = storage.getPrimaryUserById(new AppIdentifier(null, null),
+                consumeCodeResponse.user.getSupertokensUserId());
+        Passwordless.updateUser(process.getProcess(), authUser.getSupertokensUserId(), null, new Passwordless.FieldUpdate(PHONE_NUMBER));
+        authUser = storage.getPrimaryUserById(new AppIdentifier(null, null), consumeCodeResponse.user.getSupertokensUserId());
+        assertEquals(authUser.loginMethods[0].phoneNumber, PHONE_NUMBER);
 
         // create code with email twice
         {
-            Passwordless.CreateCodeResponse codeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
+            Passwordless.createCode(process.getProcess(), EMAIL, null,
                     null, null);
         }
         {
-            Passwordless.CreateCodeResponse codeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
+            Passwordless.createCode(process.getProcess(), EMAIL, null,
                     null, null);
         }
 
         // create code with phone number twice
         {
-            Passwordless.CreateCodeResponse codeResponse = Passwordless.createCode(process.getProcess(), null,
+            Passwordless.createCode(process.getProcess(), null,
                     PHONE_NUMBER, null, null);
         }
 
@@ -359,20 +441,21 @@ public class PasswordlessConsumeCodeTest {
                 null, null);
 
         // 4 codes should be available
-        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(PHONE_NUMBER);
+        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(new TenantIdentifier(null, null, null),
+                PHONE_NUMBER);
         assertEquals(2, devices.length);
 
-        devices = storage.getDevicesByEmail(EMAIL);
+        devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
         assertEquals(2, devices.length);
 
         // consume code
-        Passwordless.ConsumeCodeResponse consumeCode = Passwordless.consumeCode(process.getProcess(),
+        Passwordless.consumeCode(process.getProcess(),
                 codeResponse.deviceId, codeResponse.deviceIdHash, null, codeResponse.linkCode);
 
-        devices = storage.getDevicesByEmail(EMAIL);
+        devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
         assertEquals(0, devices.length);
 
-        devices = storage.getDevicesByPhoneNumber(PHONE_NUMBER);
+        devices = storage.getDevicesByPhoneNumber(new TenantIdentifier(null, null, null), PHONE_NUMBER);
         assertEquals(0, devices.length);
 
         process.kill();
@@ -386,7 +469,7 @@ public class PasswordlessConsumeCodeTest {
      */
     @Test
     public void testConsumeMalformedLinkCode() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("passwordless_code_lifetime", "100");
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -396,7 +479,7 @@ public class PasswordlessConsumeCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
                 null, null);
@@ -411,7 +494,7 @@ public class PasswordlessConsumeCodeTest {
         assertNotNull(error);
         assert (error instanceof Base64EncodingException);
 
-        PasswordlessDevice[] devices = storage.getDevicesByEmail(EMAIL);
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
         assertNotEquals(0, devices.length);
 
         process.kill();
@@ -425,7 +508,7 @@ public class PasswordlessConsumeCodeTest {
      */
     @Test
     public void testConsumeNonExistingLinkCode() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("passwordless_code_lifetime", "100");
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -435,7 +518,7 @@ public class PasswordlessConsumeCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
                 null, null);
@@ -453,7 +536,7 @@ public class PasswordlessConsumeCodeTest {
         assert (error instanceof RestartFlowException);
 
         // verify that devices have not been cleared
-        PasswordlessDevice[] devices = storage.getDevicesByEmail(EMAIL);
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
         assertNotEquals(0, devices.length);
 
         process.kill();
@@ -467,7 +550,7 @@ public class PasswordlessConsumeCodeTest {
      */
     @Test
     public void testConsumeWrongUserInputCode() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -476,7 +559,7 @@ public class PasswordlessConsumeCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
                 null, null);
@@ -493,7 +576,7 @@ public class PasswordlessConsumeCodeTest {
         assert (error instanceof IncorrectUserInputCodeException);
 
         // verify that devices have not been cleared
-        PasswordlessDevice[] devices = storage.getDevicesByEmail(EMAIL);
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
         assertNotEquals(0, devices.length);
 
         process.kill();
@@ -507,7 +590,7 @@ public class PasswordlessConsumeCodeTest {
      */
     @Test
     public void testConsumeExpiredLinkCode() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("passwordless_code_lifetime", "100");
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -517,7 +600,7 @@ public class PasswordlessConsumeCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
                 null, null);
@@ -535,7 +618,7 @@ public class PasswordlessConsumeCodeTest {
         assert (error instanceof RestartFlowException);
 
         // verify that devices have not been cleared
-        PasswordlessDevice[] devices = storage.getDevicesByEmail(EMAIL);
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
         assertNotEquals(0, devices.length);
 
         process.kill();
@@ -549,7 +632,7 @@ public class PasswordlessConsumeCodeTest {
      */
     @Test
     public void testConsumeExpiredUserInputCode() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("passwordless_code_lifetime", "100");
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -559,7 +642,7 @@ public class PasswordlessConsumeCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
                 null, null);
@@ -577,7 +660,7 @@ public class PasswordlessConsumeCodeTest {
         assert (error instanceof ExpiredUserInputCodeException);
 
         // verify that devices have not been cleared
-        PasswordlessDevice[] devices = storage.getDevicesByEmail(EMAIL);
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
         assertNotEquals(0, devices.length);
 
         process.kill();
@@ -586,7 +669,7 @@ public class PasswordlessConsumeCodeTest {
 
     @Test
     public void testConsumeExpiredUserInputCodeAfterResend() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("passwordless_code_lifetime", "100");
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -596,7 +679,7 @@ public class PasswordlessConsumeCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
                 null, null);
@@ -615,7 +698,7 @@ public class PasswordlessConsumeCodeTest {
         assert (error instanceof ExpiredUserInputCodeException);
 
         // verify that devices have not been cleared
-        PasswordlessDevice[] devices = storage.getDevicesByEmail(EMAIL);
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
         assertNotEquals(0, devices.length);
 
         Passwordless.CreateCodeResponse newCodeResponse = Passwordless.createCode(process.getProcess(), null, null,
@@ -637,7 +720,7 @@ public class PasswordlessConsumeCodeTest {
      */
     @Test
     public void testConsumeWrongUserInputCodeExceedingMaxAttempts() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -646,7 +729,7 @@ public class PasswordlessConsumeCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
                 null, null);
@@ -677,7 +760,7 @@ public class PasswordlessConsumeCodeTest {
         assert (error instanceof RestartFlowException);
 
         // verify that devices have been cleared, since max attempt reached
-        PasswordlessDevice[] devices = storage.getDevicesByEmail(EMAIL);
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
         assertEquals(0, devices.length);
 
         process.kill();
@@ -692,7 +775,7 @@ public class PasswordlessConsumeCodeTest {
 
     @Test
     public void testConsumeWrongLinkCodeExceedingMaxAttempts() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -701,7 +784,7 @@ public class PasswordlessConsumeCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
                 null, null);
@@ -724,7 +807,7 @@ public class PasswordlessConsumeCodeTest {
         assert (error instanceof RestartFlowException);
 
         // verify that devices have not been cleared
-        PasswordlessDevice[] devices = storage.getDevicesByEmail(EMAIL);
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
         assertNotEquals(0, devices.length);
 
         process.kill();
@@ -732,7 +815,8 @@ public class PasswordlessConsumeCodeTest {
     }
 
     /**
-     * user input code with too many failedAttempts (changed maxCodeInputAttempts configuration between consumes)
+     * user input code with too many failedAttempts (changed maxCodeInputAttempts
+     * configuration between consumes)
      * TODO: review -> do we need to create code again post restart ?
      *
      * @throws Exception
@@ -741,7 +825,7 @@ public class PasswordlessConsumeCodeTest {
     @Test
     public void testConsumeWrongUserInputCodeExceedingMaxAttemptsWithConfigUpdate() throws Exception {
         // start process with default configuration for max attempt
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -749,7 +833,7 @@ public class PasswordlessConsumeCodeTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
                 null, null);
@@ -775,7 +859,7 @@ public class PasswordlessConsumeCodeTest {
         }
 
         // verify that devices have not been cleared
-        PasswordlessDevice[] devices = storage.getDevicesByEmail(EMAIL);
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
         assertNotEquals(0, devices.length);
 
         // kill process and restart with increased max code input attempts
@@ -791,7 +875,7 @@ public class PasswordlessConsumeCodeTest {
             return;
         }
 
-        storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         try {
             Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId, createCodeResponse.deviceIdHash,
@@ -802,23 +886,25 @@ public class PasswordlessConsumeCodeTest {
         assertNotNull(error);
         assert (error instanceof RestartFlowException);
 
-        devices = storage.getDevicesByEmail(EMAIL);
+        devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
         assertEquals(0, devices.length);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    private UserInfo checkUserWithConsumeResponse(PasswordlessStorage storage, Passwordless.ConsumeCodeResponse resp,
-            String email, String phoneNumber, long joinedAfter) throws StorageQueryException {
-        UserInfo user = storage.getUserById(resp.user.id);
+    private AuthRecipeUserInfo checkUserWithConsumeResponse(PasswordlessStorage storage,
+                                                            Passwordless.ConsumeCodeResponse resp,
+                                                            String email, String phoneNumber, long joinedAfter)
+            throws StorageQueryException {
+        AuthRecipeUserInfo user = storage.getPrimaryUserById(new AppIdentifier(null, null), resp.user.getSupertokensUserId());
         assertNotNull(user);
 
-        assertEquals(email, resp.user.email);
-        assertEquals(email, user.email);
+        assertEquals(email, resp.user.loginMethods[0].email);
+        assertEquals(email, user.loginMethods[0].email);
 
-        assertEquals(phoneNumber, user.phoneNumber);
-        assertEquals(phoneNumber, resp.user.phoneNumber);
+        assertEquals(phoneNumber, user.loginMethods[0].phoneNumber);
+        assertEquals(phoneNumber, resp.user.loginMethods[0].phoneNumber);
 
         assert (user.timeJoined >= joinedAfter);
         assertEquals(user.timeJoined, resp.user.timeJoined);

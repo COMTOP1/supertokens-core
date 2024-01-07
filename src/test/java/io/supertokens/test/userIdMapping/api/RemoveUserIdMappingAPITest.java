@@ -17,12 +17,10 @@
 package io.supertokens.test.userIdMapping.api;
 
 import com.google.gson.JsonObject;
-import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
-import io.supertokens.emailverification.User;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -31,13 +29,12 @@ import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.usermetadata.UserMetadata;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
-
-import javax.servlet.ServletException;
 
 import static io.supertokens.test.Utils.createUserIdMappingAndCheckThatItExists;
 import static org.junit.Assert.*;
@@ -72,7 +69,7 @@ public class RemoveUserIdMappingAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map/remove", new JsonObject(), 1000, 1000, null,
-                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                        SemVer.v2_15.get(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -88,7 +85,7 @@ public class RemoveUserIdMappingAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map/remove", new JsonObject(), 1000, 1000, null,
-                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                        SemVer.v2_15.get(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -103,7 +100,7 @@ public class RemoveUserIdMappingAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map/remove", request, 1000, 1000, null,
-                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                        SemVer.v2_15.get(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -119,7 +116,7 @@ public class RemoveUserIdMappingAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map/remove", request, 1000, 1000, null,
-                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                        SemVer.v2_15.get(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -135,7 +132,7 @@ public class RemoveUserIdMappingAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map/remove", request, 1000, 1000, null,
-                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                        SemVer.v2_15.get(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -152,7 +149,7 @@ public class RemoveUserIdMappingAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map/remove", request, 1000, 1000, null,
-                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                        SemVer.v2_15.get(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -183,7 +180,7 @@ public class RemoveUserIdMappingAPITest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/userid/map/remove", request, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                    SemVer.v2_15.get(), "useridmapping");
             assertEquals(2, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertFalse(response.get("didMappingExist").getAsBoolean());
@@ -197,7 +194,7 @@ public class RemoveUserIdMappingAPITest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/userid/map/remove", request, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                    SemVer.v2_15.get(), "useridmapping");
             assertEquals(2, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertFalse(response.get("didMappingExist").getAsBoolean());
@@ -211,7 +208,7 @@ public class RemoveUserIdMappingAPITest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/userid/map/remove", request, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                    SemVer.v2_15.get(), "useridmapping");
             assertEquals(2, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertFalse(response.get("didMappingExist").getAsBoolean());
@@ -233,8 +230,8 @@ public class RemoveUserIdMappingAPITest {
         }
 
         // create a userId mapping
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        UserIdMapping userIdMapping = new UserIdMapping(userInfo.id, "externalUserId", "externalUserIdInfo");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        UserIdMapping userIdMapping = new UserIdMapping(userInfo.getSupertokensUserId(), "externalUserId", "externalUserIdInfo");
         createUserIdMappingAndCheckThatItExists(process.main, userIdMapping);
 
         // delete userId mapping with userIdType as SUPERTOKENS
@@ -245,7 +242,7 @@ public class RemoveUserIdMappingAPITest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/userid/map/remove", request, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                    SemVer.v2_15.get(), "useridmapping");
             assertEquals(2, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertTrue(response.get("didMappingExist").getAsBoolean());
@@ -267,7 +264,7 @@ public class RemoveUserIdMappingAPITest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/userid/map/remove", request, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                    SemVer.v2_15.get(), "useridmapping");
             assertEquals(2, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertTrue(response.get("didMappingExist").getAsBoolean());
@@ -288,7 +285,7 @@ public class RemoveUserIdMappingAPITest {
 
                 JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map/remove", request, 1000, 1000, null,
-                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                        SemVer.v2_15.get(), "useridmapping");
                 assertEquals(2, response.entrySet().size());
                 assertEquals("OK", response.get("status").getAsString());
                 assertTrue(response.get("didMappingExist").getAsBoolean());
@@ -308,7 +305,7 @@ public class RemoveUserIdMappingAPITest {
 
                 JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map/remove", request, 1000, 1000, null,
-                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                        SemVer.v2_15.get(), "useridmapping");
                 assertEquals(2, response.entrySet().size());
                 assertEquals("OK", response.get("status").getAsString());
                 assertTrue(response.get("didMappingExist").getAsBoolean());
@@ -335,8 +332,8 @@ public class RemoveUserIdMappingAPITest {
         }
 
         // create a userId mapping
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        UserIdMapping userIdMapping = new UserIdMapping(userInfo.id, "externalUserId", "externalUserIdInfo");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        UserIdMapping userIdMapping = new UserIdMapping(userInfo.getSupertokensUserId(), "externalUserId", "externalUserIdInfo");
         createUserIdMappingAndCheckThatItExists(process.main, userIdMapping);
 
         {
@@ -346,7 +343,7 @@ public class RemoveUserIdMappingAPITest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/userid/map/remove", request, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                    SemVer.v2_15.get(), "useridmapping");
             assertEquals(2, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertTrue(response.get("didMappingExist").getAsBoolean());
@@ -367,7 +364,7 @@ public class RemoveUserIdMappingAPITest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/userid/map/remove", request, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                    SemVer.v2_15.get(), "useridmapping");
             assertEquals(2, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertTrue(response.get("didMappingExist").getAsBoolean());
@@ -392,8 +389,8 @@ public class RemoveUserIdMappingAPITest {
             return;
         }
 
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        String superTokensUserId = userInfo.id;
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        String superTokensUserId = userInfo.getSupertokensUserId();
         String externalId = "externalId";
         io.supertokens.useridmapping.UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalId,
                 null, false);
@@ -410,7 +407,7 @@ public class RemoveUserIdMappingAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map/remove", request, 1000, 1000, null,
-                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                        SemVer.v2_15.get(), "useridmapping");
                 throw new Exception("Should not come here");
             } catch (HttpResponseException e) {
                 assertEquals(e.statusCode, 400);
@@ -426,7 +423,7 @@ public class RemoveUserIdMappingAPITest {
             request.addProperty("force", true);
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/userid/map/remove", request, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                    SemVer.v2_15.get(), "useridmapping");
             assertEquals(response.get("status").getAsString(), "OK");
         }
 

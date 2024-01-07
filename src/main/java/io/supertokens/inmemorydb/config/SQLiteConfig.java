@@ -16,7 +16,14 @@
 
 package io.supertokens.inmemorydb.config;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class SQLiteConfig {
+
+    public static Set<String> getValidFields() {
+        return new HashSet<>();
+    }
 
     public String getKeyValueTable() {
         return "key_value";
@@ -24,6 +31,42 @@ public class SQLiteConfig {
 
     public String getUsersTable() {
         return "all_auth_recipe_users";
+    }
+
+    public String getAppsTable() {
+        return "apps";
+    }
+
+    public String getTenantsTable() {
+        return "tenants";
+    }
+
+    public String getTenantConfigsTable() {
+        return "tenant_configs";
+    }
+
+    public String getTenantFirstFactorsTable() {
+        return "tenant_first_factors";
+    }
+
+    public String getTenantRequiredSecondaryFactorsTable() {
+        return "tenant_required_secondary_factors";
+    }
+
+    public String getTenantThirdPartyProvidersTable() {
+        return "tenant_thirdparty_providers";
+    }
+
+    public String getTenantThirdPartyProviderClientsTable() {
+        return "tenant_thirdparty_provider_clients";
+    }
+
+    public String getAppIdToUserIdTable() {
+        return "app_id_to_user_id";
+    }
+
+    public String getUserLastActiveTable() {
+        return "user_last_active";
     }
 
     public String getAccessTokenSigningKeysTable() {
@@ -36,6 +79,10 @@ public class SQLiteConfig {
 
     public String getEmailPasswordUsersTable() {
         return "emailpassword_users";
+    }
+
+    public String getEmailPasswordUserToTenantTable() {
+        return "emailpassword_user_to_tenant";
     }
 
     public String getPasswordResetTokensTable() {
@@ -54,12 +101,24 @@ public class SQLiteConfig {
         return "thirdparty_users";
     }
 
+    public String getThirdPartyUserToTenantTable() {
+        return "thirdparty_user_to_tenant";
+    }
+
+    public String getThirdPartyTenantConfigTable() {
+        return "thirdparty_tenant_config_mapping";
+    }
+
     public String getJWTSigningKeysTable() {
         return "jwt_signing_keys";
     }
 
     public String getPasswordlessUsersTable() {
         return "passwordless_users";
+    }
+
+    public String getPasswordlessUserToTenantTable() {
+        return "passwordless_user_to_tenant";
     }
 
     public String getPasswordlessDevicesTable() {
@@ -88,5 +147,25 @@ public class SQLiteConfig {
 
     public String getUserIdMappingTable() {
         return "userid_mapping";
+    }
+
+    public String getTotpUsersTable() {
+        return "totp_users";
+    }
+
+    public String getTotpUserDevicesTable() {
+        return "totp_user_devices";
+    }
+
+    public String getTotpUsedCodesTable() {
+        return "totp_used_codes";
+    }
+
+    public String getDashboardUsersTable() {
+        return "dashboard_users";
+    }
+
+    public String getDashboardSessionsTable() {
+        return "dashboard_user_sessions";
     }
 }

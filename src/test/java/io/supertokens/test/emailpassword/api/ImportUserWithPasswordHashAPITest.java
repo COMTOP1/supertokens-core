@@ -22,12 +22,14 @@ import io.supertokens.config.CoreConfig.PASSWORD_HASHING_ALG;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.ParsedFirebaseSCryptResponse;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -52,7 +54,7 @@ public class ImportUserWithPasswordHashAPITest {
 
     @Test
     public void badInputTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("firebase_password_hashing_signer_key",
                 "gRhC3eDeQOdyEn4bMd9c6kxguWVmcIVq/SKa0JDPFeM6TcEevkaW56sIWfx88OHbJKnCXdWscZx0l2WbCJ1wbg==");
@@ -68,7 +70,7 @@ public class ImportUserWithPasswordHashAPITest {
         try {
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user/passwordhash/import", null, 1000, 1000, null,
-                    Utils.getCdiVersion2_16ForTests(), "emailpassword");
+                    SemVer.v2_16.get(), "emailpassword");
             throw new Exception("Should not come here");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 400
@@ -81,7 +83,7 @@ public class ImportUserWithPasswordHashAPITest {
             JsonObject requestBody = new JsonObject();
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user/passwordhash/import", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_16ForTests(), "emailpassword");
+                    SemVer.v2_16.get(), "emailpassword");
             throw new Exception("Should not come here");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage()
@@ -93,7 +95,7 @@ public class ImportUserWithPasswordHashAPITest {
             JsonObject requestBody = new JsonObject();
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user/passwordhash/import", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_16ForTests(), "emailpassword");
+                    SemVer.v2_16.get(), "emailpassword");
             throw new Exception("Should not come here");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage()
@@ -106,7 +108,7 @@ public class ImportUserWithPasswordHashAPITest {
             requestBody.addProperty("passwordHash", "somePasswordHash");
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user/passwordhash/import", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_16ForTests(), "emailpassword");
+                    SemVer.v2_16.get(), "emailpassword");
             throw new Exception("Should not come here");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage()
@@ -119,7 +121,7 @@ public class ImportUserWithPasswordHashAPITest {
             requestBody.addProperty("email", "test@example.com");
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user/passwordhash/import", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_16ForTests(), "emailpassword");
+                    SemVer.v2_16.get(), "emailpassword");
             throw new Exception("Should not come here");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -133,7 +135,7 @@ public class ImportUserWithPasswordHashAPITest {
             requestBody.addProperty("passwordHash", "");
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user/passwordhash/import", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_16ForTests(), "emailpassword");
+                    SemVer.v2_16.get(), "emailpassword");
             throw new Exception("Should not come here");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage()
@@ -147,7 +149,7 @@ public class ImportUserWithPasswordHashAPITest {
             requestBody.addProperty("passwordHash", "invalidPasswordHash");
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user/passwordhash/import", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_16ForTests(), "emailpassword");
+                    SemVer.v2_16.get(), "emailpassword");
             throw new Exception("Should not come here");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage()
@@ -162,7 +164,7 @@ public class ImportUserWithPasswordHashAPITest {
             requestBody.addProperty("hashingAlgorithm", "random");
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user/passwordhash/import", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_16ForTests(), "emailpassword");
+                    SemVer.v2_16.get(), "emailpassword");
             throw new Exception("Should not come here");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage()
@@ -177,7 +179,7 @@ public class ImportUserWithPasswordHashAPITest {
             requestBody.addProperty("hashingAlgorithm", "bcrypt");
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user/passwordhash/import", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_16ForTests(), "emailpassword");
+                    SemVer.v2_16.get(), "emailpassword");
             throw new Exception("Should not come here");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage()
@@ -192,7 +194,7 @@ public class ImportUserWithPasswordHashAPITest {
             requestBody.addProperty("hashingAlgorithm", "argon2");
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user/passwordhash/import", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_16ForTests(), "emailpassword");
+                    SemVer.v2_16.get(), "emailpassword");
             throw new Exception("Should not come here");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage()
@@ -207,7 +209,7 @@ public class ImportUserWithPasswordHashAPITest {
             requestBody.addProperty("hashingAlgorithm", "firebase_scrypt");
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user/passwordhash/import", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_16ForTests(), "emailpassword");
+                    SemVer.v2_16.get(), "emailpassword");
             throw new Exception("Should not come here");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -221,7 +223,7 @@ public class ImportUserWithPasswordHashAPITest {
     @Test
     public void testSigningInWithFireBasePasswordWithInvalidSignerKey() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("firebase_password_hashing_signer_key", "invalidSignerkey");
 
@@ -239,7 +241,8 @@ public class ImportUserWithPasswordHashAPITest {
         String email = "test@example.com";
         String password = "testPass123";
         String salt = "/cj0jC1br5o4+w==";
-        String passwordHash = "qZM035es5AXYqavsKD6/rhtxg7t5PhcyRgv5blc3doYbChX8keMfQLq1ra96O2Pf2TP/eZrR5xtPCYN6mX3ESA==";
+        String passwordHash = "qZM035es5AXYqavsKD6/rhtxg7t5PhcyRgv5blc3doYbChX8keMfQLq1ra96O2Pf2TP/eZrR5xtPCYN6mX3ESA" +
+                "==";
         String combinedPasswordHash = "$" + ParsedFirebaseSCryptResponse.FIREBASE_SCRYPT_PREFIX + "$" + passwordHash
                 + "$" + salt + "$m=" + firebaseMemCost + "$r=" + firebaseRounds + "$s=" + firebaseSaltSeparator;
 
@@ -252,7 +255,7 @@ public class ImportUserWithPasswordHashAPITest {
 
         JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/signin", signInRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_16ForTests(), "emailpassword");
+                SemVer.v2_16.get(), "emailpassword");
         assertEquals(signInResponse.get("status").getAsString(), "WRONG_CREDENTIALS_ERROR");
 
         process.kill();
@@ -261,7 +264,7 @@ public class ImportUserWithPasswordHashAPITest {
 
     @Test
     public void testImportingAUsesrFromFirebaseWithoutSettingTheSignerKey() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -276,7 +279,8 @@ public class ImportUserWithPasswordHashAPITest {
 
         String email = "test@example.com";
         String salt = "/cj0jC1br5o4+w==";
-        String passwordHash = "qZM035es5AXYqavsKD6/rhtxg7t5PhcyRgv5blc3doYbChX8keMfQLq1ra96O2Pf2TP/eZrR5xtPCYN6mX3ESA==";
+        String passwordHash = "qZM035es5AXYqavsKD6/rhtxg7t5PhcyRgv5blc3doYbChX8keMfQLq1ra96O2Pf2TP/eZrR5xtPCYN6mX3ESA" +
+                "==";
         String combinedPasswordHash = "$" + ParsedFirebaseSCryptResponse.FIREBASE_SCRYPT_PREFIX + "$" + passwordHash
                 + "$" + salt + "$m=" + firebaseMemCost + "$r=" + firebaseRounds + "$s=" + firebaseSaltSeparator;
 
@@ -289,7 +293,7 @@ public class ImportUserWithPasswordHashAPITest {
         try {
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user/passwordhash/import", importUserRequestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_16ForTests(), "emailpassword");
+                    SemVer.v2_16.get(), "emailpassword");
             throw new Exception("Should not come here");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 500
@@ -302,7 +306,7 @@ public class ImportUserWithPasswordHashAPITest {
 
     @Test
     public void testSigningInAUserWhenStoredPasswordHashIsIncorrect() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("firebase_password_hashing_signer_key",
                 "gRhC3eDeQOdyEn4bMd9c6kxguWVmcIVq/SKa0JDPFeM6TcEevkaW56sIWfx88OHbJKnCXdWscZx0l2WbCJ1wbg==");
@@ -327,10 +331,9 @@ public class ImportUserWithPasswordHashAPITest {
 
         long timeJoined = System.currentTimeMillis();
 
-        UserInfo userInfo = new UserInfo("userId", email, combinedPasswordHash, timeJoined);
-        EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(process.getProcess());
+        EmailPasswordSQLStorage storage = (EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess());
 
-        storage.signUp(userInfo);
+        storage.signUp(new TenantIdentifier(null, null, null), "userId", email, combinedPasswordHash, timeJoined);
 
         JsonObject signInRequestBody = new JsonObject();
         signInRequestBody.addProperty("email", email);
@@ -338,7 +341,7 @@ public class ImportUserWithPasswordHashAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/signin", signInRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_16ForTests(), "emailpassword");
+                SemVer.v2_16.get(), "emailpassword");
         assertEquals("WRONG_CREDENTIALS_ERROR", response.get("status").getAsString());
 
         process.kill();
@@ -347,7 +350,7 @@ public class ImportUserWithPasswordHashAPITest {
 
     @Test
     public void testSigningInAUserWithFirebasePasswordHashWithoutSettingTheSignerKey() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -363,16 +366,16 @@ public class ImportUserWithPasswordHashAPITest {
         String email = "test@example.com";
         String password = "testPass123";
         String salt = "/cj0jC1br5o4+w==";
-        String passwordHash = "qZM035es5AXYqavsKD6/rhtxg7t5PhcyRgv5blc3doYbChX8keMfQLq1ra96O2Pf2TP/eZrR5xtPCYN6mX3ESA==";
+        String passwordHash = "qZM035es5AXYqavsKD6/rhtxg7t5PhcyRgv5blc3doYbChX8keMfQLq1ra96O2Pf2TP/eZrR5xtPCYN6mX3ESA" +
+                "==";
         String combinedPasswordHash = "$" + ParsedFirebaseSCryptResponse.FIREBASE_SCRYPT_PREFIX + "$" + passwordHash
                 + "$" + salt + "$m=" + firebaseMemCost + "$r=" + firebaseRounds + "$s=" + firebaseSaltSeparator;
 
         long timeJoined = System.currentTimeMillis();
 
-        UserInfo userInfo = new UserInfo("userId", email, combinedPasswordHash, timeJoined);
-        EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(process.getProcess());
+        EmailPasswordSQLStorage storage = (EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess());
 
-        storage.signUp(userInfo);
+        storage.signUp(new TenantIdentifier(null, null, null), "userId", email, combinedPasswordHash, timeJoined);
 
         // sign in should result in 500 error since the firebase signer key is not set
         JsonObject signInRequestBody = new JsonObject();
@@ -381,7 +384,7 @@ public class ImportUserWithPasswordHashAPITest {
 
         try {
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/signin",
-                    signInRequestBody, 1000, 1000, null, Utils.getCdiVersion2_16ForTests(), "emailpassword");
+                    signInRequestBody, 1000, 1000, null, SemVer.v2_16.get(), "emailpassword");
             throw new Exception("Should not come here");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 500
@@ -394,7 +397,7 @@ public class ImportUserWithPasswordHashAPITest {
 
     @Test
     public void testImportingAUserFromFireBaseWithFirebaseSCryptPasswordHash() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("firebase_password_hashing_signer_key",
                 "gRhC3eDeQOdyEn4bMd9c6kxguWVmcIVq/SKa0JDPFeM6TcEevkaW56sIWfx88OHbJKnCXdWscZx0l2WbCJ1wbg==");
@@ -413,7 +416,8 @@ public class ImportUserWithPasswordHashAPITest {
         String email = "test@example.com";
         String password = "testPass123";
         String salt = "/cj0jC1br5o4+w==";
-        String passwordHash = "qZM035es5AXYqavsKD6/rhtxg7t5PhcyRgv5blc3doYbChX8keMfQLq1ra96O2Pf2TP/eZrR5xtPCYN6mX3ESA==";
+        String passwordHash = "qZM035es5AXYqavsKD6/rhtxg7t5PhcyRgv5blc3doYbChX8keMfQLq1ra96O2Pf2TP/eZrR5xtPCYN6mX3ESA" +
+                "==";
         String combinedPasswordHash = "$" + ParsedFirebaseSCryptResponse.FIREBASE_SCRYPT_PREFIX + "$" + passwordHash
                 + "$" + salt + "$m=" + firebaseMemCost + "$r=" + firebaseRounds + "$s=" + firebaseSaltSeparator;
 
@@ -424,7 +428,7 @@ public class ImportUserWithPasswordHashAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user/passwordhash/import", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_16ForTests(), "emailpassword");
+                SemVer.v2_16.get(), "emailpassword");
 
         assertEquals("OK", response.get("status").getAsString());
         assertFalse(response.get("didUserAlreadyExist").getAsBoolean());
@@ -437,7 +441,7 @@ public class ImportUserWithPasswordHashAPITest {
 
             JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/signin", signInRequestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_16ForTests(), "emailpassword");
+                    SemVer.v2_16.get(), "emailpassword");
             assertEquals("WRONG_CREDENTIALS_ERROR", signInResponse.get("status").getAsString());
         }
 
@@ -449,7 +453,7 @@ public class ImportUserWithPasswordHashAPITest {
 
             JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/signin", signInRequestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_16ForTests(), "emailpassword");
+                    SemVer.v2_16.get(), "emailpassword");
             assertEquals("OK", signInResponse.get("status").getAsString());
             assertEquals(signInResponse.get("user").getAsJsonObject(), response.get("user").getAsJsonObject());
         }
@@ -460,7 +464,7 @@ public class ImportUserWithPasswordHashAPITest {
     // migrate a user with email and password hash sign in and check that the user is created and the password works
     @Test
     public void testGoodInput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -479,7 +483,7 @@ public class ImportUserWithPasswordHashAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user/passwordhash/import", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_16ForTests(), "emailpassword");
+                SemVer.v2_16.get(), "emailpassword");
 
         assertEquals("OK", response.get("status").getAsString());
         assertFalse(response.get("didUserAlreadyExist").getAsBoolean());
@@ -491,7 +495,7 @@ public class ImportUserWithPasswordHashAPITest {
 
         JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/signin", signInRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_16ForTests(), "emailpassword");
+                SemVer.v2_16.get(), "emailpassword");
         assertEquals("OK", signInResponse.get("status").getAsString());
         assertEquals(signInResponse.get("user").getAsJsonObject(), response.get("user").getAsJsonObject());
 
@@ -501,7 +505,7 @@ public class ImportUserWithPasswordHashAPITest {
 
     @Test
     public void testUpdatingAUsersPasswordHash() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -514,7 +518,7 @@ public class ImportUserWithPasswordHashAPITest {
         String email = "test@example.com";
         String password = "testPass123";
 
-        UserInfo initialUserInfo = EmailPassword.signUp(process.main, email, password);
+        AuthRecipeUserInfo initialUserInfo = EmailPassword.signUp(process.main, email, password);
 
         // update a user's passwordHash
 
@@ -527,16 +531,16 @@ public class ImportUserWithPasswordHashAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user/passwordhash/import", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_16ForTests(), "emailpassword");
+                SemVer.v2_16.get(), "emailpassword");
         assertEquals("OK", response.get("status").getAsString());
         assertTrue(response.get("didUserAlreadyExist").getAsBoolean());
 
         // check that a new user was not created by comparing userIds
-        assertEquals(initialUserInfo.id, response.get("user").getAsJsonObject().get("id").getAsString());
+        assertEquals(initialUserInfo.getSupertokensUserId(), response.get("user").getAsJsonObject().get("id").getAsString());
 
         // sign in with the new password to check if the password hash got updated
-        UserInfo updatedUserInfo = EmailPassword.signIn(process.main, email, newPassword);
-        assertEquals(updatedUserInfo.passwordHash, passwordHash);
+        AuthRecipeUserInfo updatedUserInfo = EmailPassword.signIn(process.main, email, newPassword);
+        assertEquals(updatedUserInfo.loginMethods[0].passwordHash, passwordHash);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -544,7 +548,7 @@ public class ImportUserWithPasswordHashAPITest {
 
     @Test
     public void testImportingUsersWithHashingAlgorithmFieldWithMixedLowerAndUpperCase() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -566,14 +570,14 @@ public class ImportUserWithPasswordHashAPITest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user/passwordhash/import", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_16ForTests(), "emailpassword");
+                    SemVer.v2_16.get(), "emailpassword");
             assertEquals("OK", response.get("status").getAsString());
             assertFalse(response.get("didUserAlreadyExist").getAsBoolean());
 
             // check that the user is created by signing in
-            UserInfo userInfo = EmailPassword.signIn(process.main, email, password);
-            assertEquals(email, userInfo.email);
-            assertEquals(userInfo.passwordHash, passwordHash);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            assertEquals(email, userInfo.loginMethods[0].email);
+            assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
 
         }
 
@@ -590,14 +594,14 @@ public class ImportUserWithPasswordHashAPITest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user/passwordhash/import", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_16ForTests(), "emailpassword");
+                    SemVer.v2_16.get(), "emailpassword");
             assertEquals("OK", response.get("status").getAsString());
             assertFalse(response.get("didUserAlreadyExist").getAsBoolean());
 
             // check that the user is created by signing in
-            UserInfo userInfo = EmailPassword.signIn(process.main, email, password);
-            assertEquals(email, userInfo.email);
-            assertEquals(userInfo.passwordHash, passwordHash);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            assertEquals(email, userInfo.loginMethods[0].email);
+            assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
         }
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -605,7 +609,7 @@ public class ImportUserWithPasswordHashAPITest {
 
     @Test
     public void testImportingUsersWithHashingAlgorithmField() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -627,14 +631,14 @@ public class ImportUserWithPasswordHashAPITest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user/passwordhash/import", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_16ForTests(), "emailpassword");
+                    SemVer.v2_16.get(), "emailpassword");
             assertEquals("OK", response.get("status").getAsString());
             assertFalse(response.get("didUserAlreadyExist").getAsBoolean());
 
             // check that the user is created by signing in
-            UserInfo userInfo = EmailPassword.signIn(process.main, email, password);
-            assertEquals(email, userInfo.email);
-            assertEquals(userInfo.passwordHash, passwordHash);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            assertEquals(email, userInfo.loginMethods[0].email);
+            assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
 
         }
 
@@ -651,14 +655,14 @@ public class ImportUserWithPasswordHashAPITest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user/passwordhash/import", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_16ForTests(), "emailpassword");
+                    SemVer.v2_16.get(), "emailpassword");
             assertEquals("OK", response.get("status").getAsString());
             assertFalse(response.get("didUserAlreadyExist").getAsBoolean());
 
             // check that the user is created by signing in
-            UserInfo userInfo = EmailPassword.signIn(process.main, email, password);
-            assertEquals(email, userInfo.email);
-            assertEquals(userInfo.passwordHash, passwordHash);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            assertEquals(email, userInfo.loginMethods[0].email);
+            assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
         }
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

@@ -21,13 +21,14 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -37,7 +38,7 @@ import org.junit.rules.TestRule;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class GetUsersAPIWithUserIdMappingTest {
@@ -56,7 +57,7 @@ public class GetUsersAPIWithUserIdMappingTest {
 
     @Test
     public void createMultipleUsersAndMapTheirIdsRetrieveAllUsersAndCheckThatExternalIdIsReturned() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -64,22 +65,23 @@ public class GetUsersAPIWithUserIdMappingTest {
             return;
         }
 
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
         ArrayList<String> externalUserIdList = new ArrayList<>();
 
         for (int i = 1; i <= 10; i++) {
             // create User
-            UserInfo userInfo = EmailPassword.signUp(process.main, "test" + i + "@example.com", "testPass123");
-            String superTokensUserId = userInfo.id;
+            AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test" + i + "@example.com", "testPass123");
+            String superTokensUserId = userInfo.getSupertokensUserId();
             String externalUserId = "externalId" + i;
             externalUserIdList.add(externalUserId);
 
             // create a userId mapping
-            storage.createUserIdMapping(superTokensUserId, externalUserId, null);
+            storage.createUserIdMapping(new AppIdentifier(null, null), superTokensUserId, externalUserId,
+                    null);
         }
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/users", null, 1000, 1000, null, Utils.getCdiVersion2_15ForTests(), null);
+                "http://localhost:3567/users", null, 1000, 1000, null, SemVer.v2_15.get(), null);
         assertEquals("OK", response.get("status").getAsString());
         JsonArray users = response.getAsJsonArray("users");
         assertEquals(10, users.size());
@@ -95,7 +97,7 @@ public class GetUsersAPIWithUserIdMappingTest {
     @Test
     public void createMultipleUsersAndMapTheirIdsRetrieveUsersUsingPaginationTokenAndCheckThatExternalIdIsReturned()
             throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -103,25 +105,26 @@ public class GetUsersAPIWithUserIdMappingTest {
             return;
         }
 
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
         ArrayList<String> externalUserIdList = new ArrayList<>();
 
         for (int i = 1; i <= 20; i++) {
             // create User
-            UserInfo userInfo = EmailPassword.signUp(process.main, "test" + i + "@example.com", "testPass123");
-            String superTokensUserId = userInfo.id;
+            AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test" + i + "@example.com", "testPass123");
+            String superTokensUserId = userInfo.getSupertokensUserId();
             String externalUserId = "externalId" + i;
             externalUserIdList.add(externalUserId);
 
             // create a userId mapping
-            storage.createUserIdMapping(superTokensUserId, externalUserId, null);
+            storage.createUserIdMapping(new AppIdentifier(null, null), superTokensUserId, externalUserId,
+                    null);
         }
 
         HashMap<String, String> queryParams = new HashMap<>();
         queryParams.put("limit", "10");
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/users", queryParams, 1000, 1000, null, Utils.getCdiVersion2_15ForTests(), null);
+                "http://localhost:3567/users", queryParams, 1000, 1000, null, SemVer.v2_15.get(), null);
 
         assertEquals("OK", response.get("status").getAsString());
         JsonArray users = response.getAsJsonArray("users");
@@ -139,7 +142,7 @@ public class GetUsersAPIWithUserIdMappingTest {
         queryParams_2.put("paginationToken", paginationToken);
 
         JsonObject response_2 = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/users", queryParams_2, 1000, 1000, null, Utils.getCdiVersion2_15ForTests(),
+                "http://localhost:3567/users", queryParams_2, 1000, 1000, null, SemVer.v2_15.get(),
                 null);
 
         assertEquals("OK", response_2.get("status").getAsString());

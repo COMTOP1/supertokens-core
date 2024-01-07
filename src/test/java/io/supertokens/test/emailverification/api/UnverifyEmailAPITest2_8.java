@@ -26,10 +26,13 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.utils.SemVer;
 import org.junit.*;
 import org.junit.rules.TestRule;
 
 import java.io.IOException;
+
+import static org.junit.Assert.assertFalse;
 
 public class UnverifyEmailAPITest2_8 {
     @Rule
@@ -79,10 +82,12 @@ public class UnverifyEmailAPITest2_8 {
             // given
             JsonObject body = new JsonObject();
             body.addProperty("userId", "mockUserId");
-            body.addProperty("email", "john.doe@example.com");
+            body.addProperty("email", "john.doE@example.com");
 
             String token = EmailVerification.generateEmailVerificationToken(main, "mockUserId", "john.doe@example.com");
             EmailVerification.verifyEmail(main, token);
+
+            assert (EmailVerification.isEmailVerified(process.main, "mockUserId", "john.doe@example.com"));
 
             // when
             JsonObject response = unverifyEmail(main, body);
@@ -91,12 +96,14 @@ public class UnverifyEmailAPITest2_8 {
 
             // then
             Assert.assertEquals("OK", responseStatus);
+
+            assertFalse(EmailVerification.isEmailVerified(process.main, "mockUserId", "john.doe@example.com"));
         });
     }
 
     private JsonObject unverifyEmail(Main main, JsonObject body) throws IOException, HttpResponseException {
         return HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 "http://localhost:3567/recipe/user/email/verify/remove", body, 1000, 1000, null,
-                Utils.getCdiVersion2_8ForTests(), RECIPE_ID.EMAIL_VERIFICATION.toString());
+                SemVer.v2_8.get(), RECIPE_ID.EMAIL_VERIFICATION.toString());
     }
 }

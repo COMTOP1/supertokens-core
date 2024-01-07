@@ -20,10 +20,11 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.utils.SemVer;
 import org.junit.*;
 import org.junit.rules.TestRule;
 
@@ -61,25 +62,25 @@ public class AuthRecipeAPITest2_10 {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/user/remove", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_10ForTests(), "");
+                    SemVer.v2_10.get(), "");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.entrySet().size(), 1);
         }
 
-        UserInfo user = EmailPassword.signUp(process.getProcess(), "test0@example.com", "password0");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test0@example.com", "password0");
 
         {
             JsonObject requestBody = new JsonObject();
-            requestBody.addProperty("userId", user.id);
+            requestBody.addProperty("userId", user.getSupertokensUserId());
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/user/remove", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_10ForTests(), "");
+                    SemVer.v2_10.get(), "");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.entrySet().size(), 1);
         }
 
-        assertNull(EmailPassword.getUserUsingId(process.getProcess(), user.id));
+        assertNull(EmailPassword.getUserUsingId(process.getProcess(), user.getSupertokensUserId()));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -100,7 +101,7 @@ public class AuthRecipeAPITest2_10 {
         try {
             JsonObject requestBody = new JsonObject();
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/user/remove",
-                    requestBody, 1000, 1000, null, Utils.getCdiVersion2_10ForTests(), "");
+                    requestBody, 1000, 1000, null, SemVer.v2_10.get(), "");
         } catch (HttpResponseException e) {
             error = e;
         }

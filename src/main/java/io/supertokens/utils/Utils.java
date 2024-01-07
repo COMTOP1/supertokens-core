@@ -16,18 +16,30 @@
 
 package io.supertokens.utils;
 
-import javax.crypto.*;
-import javax.crypto.spec.GCMParameterSpec;
-import javax.crypto.spec.PBEKeySpec;
-import javax.crypto.spec.SecretKeySpec;
-
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.i18n.phonenumbers.PhoneNumberUtil;
+import com.google.i18n.phonenumbers.NumberParseException;
+import com.google.i18n.phonenumbers.Phonenumber;
+import io.supertokens.Main;
+import io.supertokens.config.Config;
+import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.jwt.JWTAsymmetricSigningKeyInfo;
+import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.signingkeys.JWTSigningKey;
+import io.supertokens.signingkeys.SigningKeys;
+import io.supertokens.signingkeys.SigningKeys.KeyInfo;
 
-import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
-
+import javax.crypto.*;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.PBEKeySpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.math.BigInteger;
@@ -39,14 +51,53 @@ import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
-import java.util.List;
 import java.util.Base64.Decoder;
 import java.util.Base64.Encoder;
+import java.util.List;
 import java.util.UUID;
 
 public class Utils {
 
+    /**
+     * Normalizes a phone number by trimming and formatting it according to the
+     * E.164 standard.
+     * <p>
+     * The function attempts to parse the given phone number using libphonenumber.
+     * If parsing is successful,
+     * it formats the phone number according to the E.164 standard. If parsing fails
+     * (throws a NumberParseException),
+     * it still trims the input and returns the original trimmed phone number.
+     *
+     * @param phoneNumber The input phone number to be normalized.
+     * @return The normalized phone number or the original trimmed phone number if
+     * it cannot be parsed.
+     */
+    public static String normalizeIfPhoneNumber(String phoneNumber) {
+        if (phoneNumber == null) {
+            return null;
+        }
+
+        PhoneNumberUtil phoneNumberUtil = PhoneNumberUtil.getInstance();
+
+        try {
+            // Attempt to parse the phone number with default region code "ZZ" (unknown
+            // region)
+            Phonenumber.PhoneNumber parsedPhoneNumber = phoneNumberUtil.parse(phoneNumber.trim(), "ZZ");
+
+            // Format the parsed phone number according to E.164 standard
+            phoneNumber = phoneNumberUtil.format(parsedPhoneNumber, PhoneNumberUtil.PhoneNumberFormat.E164);
+        } catch (NumberParseException e) {
+            // Parsing failed, use the original trimmed phone number
+            phoneNumber = phoneNumber.trim();
+        }
+
+        return phoneNumber;
+    }
+
     public static String normaliseEmail(String email) {
+        if (email == null) {
+            return null;
+        }
         // we assume that the email's syntax is correct here.
 
         // as per https://github.com/supertokens/supertokens-core/issues/89 and
@@ -57,12 +108,18 @@ public class Utils {
         return email;
     }
 
+    public static String convertToBase64Url(String str) {
+        return new String(Base64.getUrlEncoder().encode(stringToBytes(str)), StandardCharsets.UTF_8);
+    }
+
     public static String convertToBase64(String str) {
         return new String(Base64.getEncoder().encode(stringToBytes(str)), StandardCharsets.UTF_8);
     }
 
+    // This function deserializes both B64 and B64URL encodings
     public static String convertFromBase64(String str) {
-        return new String(Base64.getDecoder().decode(stringToBytes(str)), StandardCharsets.UTF_8);
+        return new String(Base64.getDecoder().decode(stringToBytes(str.replace("-", "+").replace("_", "/"))),
+                StandardCharsets.UTF_8);
     }
 
     public static String throwableStacktraceToString(Throwable e) {
@@ -227,7 +284,7 @@ public class Utils {
         return new PubPriKey(pubStr, priStr);
     }
 
-    public static String signWithPrivateKey(String content, String privateKey)
+    public static String signWithPrivateKey(String content, String privateKey, boolean urlEncode)
             throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, SignatureException {
         Signature sign = Signature.getInstance("SHA256withRSA");
         Base64.Decoder decoder = Base64.getDecoder();
@@ -237,18 +294,19 @@ public class Utils {
 
         sign.initSign(pvt);
         sign.update(stringToBytes(content));
-        Base64.Encoder encoder = Base64.getEncoder();
+        Base64.Encoder encoder = urlEncode ? Base64.getUrlEncoder() : Base64.getEncoder();
         return encoder.encodeToString(sign.sign());
     }
 
-    public static boolean verifyWithPublicKey(String content, String signature, String publicKey)
+    public static boolean verifyWithPublicKey(String content, String signature, String publicKey, boolean urlEncoded)
             throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, SignatureException {
         Signature sign = Signature.getInstance("SHA256withRSA");
-        Base64.Decoder decoder = Base64.getDecoder();
-        X509EncodedKeySpec ks = new X509EncodedKeySpec(decoder.decode(publicKey));
+        Base64.Decoder keyDecoder = Base64.getDecoder();
+        X509EncodedKeySpec ks = new X509EncodedKeySpec(keyDecoder.decode(publicKey));
         KeyFactory kf = KeyFactory.getInstance("RSA");
         PublicKey pub = kf.generatePublic(ks);
 
+        Base64.Decoder decoder = urlEncoded ? Base64.getUrlDecoder() : Base64.getDecoder();
         sign.initVerify(pub);
         sign.update(stringToBytes(content));
         return sign.verify(decoder.decode(signature));
@@ -264,14 +322,45 @@ public class Utils {
         }
 
         public PubPriKey(String s) {
-            this.publicKey = s.split(";")[0];
-            this.privateKey = s.split(";")[1];
+            // We split by both | and ; because in old versions we used to use ";" in
+            // dynamic and "|" in static keys
+            // Now we are consolidating all of them to use "|", but by handling legacy keys,
+            // we can avoid the need
+            // for manual key migration.
+            // I.e.: this way only people who set access_token_signing_key_dynamic to false
+            // has to do manual
+            // migration instead of everyone.
+            // for everyone else, the key rotation should get it done.
+            String[] parts = s.split("[|;]");
+
+            this.publicKey = parts[0];
+            this.privateKey = parts[1];
         }
 
         @Override
         public String toString() {
-            return publicKey + ";" + privateKey;
+            return publicKey + "|" + privateKey;
         }
+    }
+
+    public static PublicKey getPublicKeyFromString(String keyCert, JWTSigningKey.SupportedAlgorithms algorithm)
+            throws NoSuchAlgorithmException, InvalidKeySpecException {
+        byte[] decodedKeyBytes = Base64.getDecoder().decode(keyCert);
+        X509EncodedKeySpec keySpec = new X509EncodedKeySpec(decodedKeyBytes);
+        KeyFactory kf = KeyFactory.getInstance(algorithm.getAlgorithmType());
+        return kf.generatePublic(keySpec);
+    }
+
+    public static PrivateKey getPrivateKeyFromString(String keyCert, JWTSigningKey.SupportedAlgorithms algorithm)
+            throws NoSuchAlgorithmException, InvalidKeySpecException {
+        byte[] decodedKeyBytes = Base64.getDecoder().decode(keyCert);
+        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(decodedKeyBytes);
+        KeyFactory kf = KeyFactory.getInstance(algorithm.getAlgorithmType());
+        return kf.generatePrivate(keySpec);
+    }
+
+    public static JWTSigningKeyInfo getJWTSigningKeyInfoFromKeyInfo(KeyInfo keyInfo) {
+        return new JWTAsymmetricSigningKeyInfo(keyInfo.id, keyInfo.createdAtTime, keyInfo.algorithm, keyInfo.value);
     }
 
     public static String getUUID() {
@@ -286,16 +375,49 @@ public class Utils {
         return baos.toString();
     }
 
-    public static JsonArray keyListToJson(List<KeyInfo> keys) {
-        JsonArray jwtSigningPublicKeyListJSON = new JsonArray();
-        for (KeyInfo keyInfo : keys) {
-            JsonObject keyJSON = new JsonObject();
-            keyJSON.addProperty("publicKey", new PubPriKey(keyInfo.value).publicKey);
-            keyJSON.addProperty("expiryTime", keyInfo.expiryTime);
-            keyJSON.addProperty("createdAt", keyInfo.createdAtTime);
-            jwtSigningPublicKeyListJSON.add(keyJSON);
+    public static JsonObject addLegacySigningKeyInfos(AppIdentifier appIdentifier, Main main, JsonObject result,
+                                                      boolean addKeyList)
+            throws StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException,
+            TenantOrAppNotFoundException {
+        if (Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getAccessTokenSigningKeyDynamic()) {
+            result.addProperty("jwtSigningPublicKey",
+                    new Utils.PubPriKey(
+                            SigningKeys.getInstance(appIdentifier, main).getLatestIssuedDynamicKey().value).publicKey);
+            result.addProperty("jwtSigningPublicKeyExpiryTime",
+                    SigningKeys.getInstance(appIdentifier, main).getDynamicSigningKeyExpiryTime());
+
+            if (addKeyList) {
+                List<KeyInfo> keys = SigningKeys.getInstance(appIdentifier, main).getDynamicKeys();
+
+                JsonArray jwtSigningPublicKeyListJSON = new JsonArray();
+                for (KeyInfo keyInfo : keys) {
+                    JsonObject keyJSON = new JsonObject();
+                    keyJSON.addProperty("publicKey", new PubPriKey(keyInfo.value).publicKey);
+                    keyJSON.addProperty("expiryTime", keyInfo.expiryTime);
+                    keyJSON.addProperty("createdAt", keyInfo.createdAtTime);
+                    jwtSigningPublicKeyListJSON.add(keyJSON);
+                }
+
+                result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
+            }
+        } else {
+            JWTSigningKeyInfo keyInfo = SigningKeys.getInstance(appIdentifier, main)
+                    .getStaticKeyForAlgorithm(JWTSigningKey.SupportedAlgorithms.RS256);
+            result.addProperty("jwtSigningPublicKey", new Utils.PubPriKey(keyInfo.keyString).publicKey);
+            result.addProperty("jwtSigningPublicKeyExpiryTime", 10L * 365 * 24 * 3600 * 1000);
+
+            if (addKeyList) {
+                JsonArray jwtSigningPublicKeyListJSON = new JsonArray();
+                JsonObject keyJSON = new JsonObject();
+                keyJSON.addProperty("publicKey", new Utils.PubPriKey(keyInfo.keyString).publicKey);
+                keyJSON.addProperty("expiryTime", keyInfo.createdAtTime + 10L * 365 * 24 * 3600 * 1000);
+                keyJSON.addProperty("createdAt", keyInfo.createdAtTime);
+                jwtSigningPublicKeyListJSON.add(keyJSON);
+                result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
+            }
         }
-        return jwtSigningPublicKeyListJSON;
+
+        return result;
     }
 
     public static JsonElement toJsonTreeWithNulls(Object src) {

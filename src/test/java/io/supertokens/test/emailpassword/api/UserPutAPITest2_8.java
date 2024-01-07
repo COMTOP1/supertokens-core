@@ -20,11 +20,12 @@ import com.google.gson.JsonObject;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -59,7 +60,7 @@ public class UserPutAPITest2_8 {
             body.addProperty("email", "someemail@gmail.com");
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/user", body, 1000, 1000, null, Utils.getCdiVersion2_8ForTests(),
+                    "http://localhost:3567/recipe/user", body, 1000, 1000, null, SemVer.v2_8.get(),
                     RECIPE_ID.EMAIL_PASSWORD.toString());
 
             assertEquals("UNKNOWN_USER_ID_ERROR", response.get("status").getAsString());
@@ -74,19 +75,43 @@ public class UserPutAPITest2_8 {
                 return;
             }
 
-            UserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
-            UserInfo user2 = EmailPassword.signUp(process.getProcess(), "someemail2@gmail.com", "somePass");
+            AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
+            AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "someemail2@gmail.com", "somePass");
 
             JsonObject body = new JsonObject();
-            body.addProperty("userId", user.id);
-            body.addProperty("email", user2.email);
+            body.addProperty("userId", user.getSupertokensUserId());
+            body.addProperty("email", user2.loginMethods[0].email);
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/user", body, 1000, 1000, null, Utils.getCdiVersion2_8ForTests(),
+                    "http://localhost:3567/recipe/user", body, 1000, 1000, null, SemVer.v2_8.get(),
                     RECIPE_ID.EMAIL_PASSWORD.toString());
 
             assertEquals("EMAIL_ALREADY_EXISTS_ERROR", response.get("status").getAsString());
             assertEquals(1, response.entrySet().size());
+        });
+    }
+
+    @Test
+    public void testUpdatingEmailNormalisesIt() throws Exception {
+        TestingProcessManager.withProcess(process -> {
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
+            AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
+
+            JsonObject body = new JsonObject();
+            body.addProperty("userId", user.getSupertokensUserId());
+            body.addProperty("email", "someemail+TEST@gmail.com");
+
+            JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user", body, 1000, 1000, null, SemVer.v2_8.get(),
+                    RECIPE_ID.EMAIL_PASSWORD.toString());
+
+            assertEquals("OK", response.get("status").getAsString());
+            assertEquals(1, response.entrySet().size());
+
+            EmailPassword.signIn(process.getProcess(), "someemail+test@gmail.com", "somePass");
         });
     }
 
@@ -102,7 +127,7 @@ public class UserPutAPITest2_8 {
 
             try {
                 HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/recipe/user",
-                        body, 1000, 1000, null, Utils.getCdiVersion2_8ForTests(), RECIPE_ID.EMAIL_PASSWORD.toString());
+                        body, 1000, 1000, null, SemVer.v2_8.get(), RECIPE_ID.EMAIL_PASSWORD.toString());
 
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertEquals(400, e.statusCode);
@@ -119,18 +144,44 @@ public class UserPutAPITest2_8 {
                 return;
             }
 
-            UserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
+            AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
 
             JsonObject body = new JsonObject();
-            body.addProperty("userId", user.id);
+            body.addProperty("userId", user.getSupertokensUserId());
             body.addProperty("email", "someOtherEmail@gmail.com");
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/user", body, 1000, 1000, null, Utils.getCdiVersion2_8ForTests(),
+                    "http://localhost:3567/recipe/user", body, 1000, 1000, null, SemVer.v2_8.get(),
                     RECIPE_ID.EMAIL_PASSWORD.toString());
 
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(1, response.entrySet().size());
+
+            EmailPassword.signIn(process.main, "someotheremail@gmail.com", "somePass");
+        });
+    }
+
+    @Test
+    public void testSuccessfulUpdateWithOnlyPassword() throws Exception {
+        TestingProcessManager.withProcess(process -> {
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
+            AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
+
+            JsonObject body = new JsonObject();
+            body.addProperty("userId", user.getSupertokensUserId());
+            body.addProperty("password", "somePass123");
+
+            JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user", body, 1000, 1000, null, SemVer.v2_8.get(),
+                    RECIPE_ID.EMAIL_PASSWORD.toString());
+
+            assertEquals("OK", response.get("status").getAsString());
+            assertEquals(1, response.entrySet().size());
+
+            EmailPassword.signIn(process.main, "someemail@gmail.com", "somePass123");
         });
     }
 

@@ -16,23 +16,29 @@
 
 package io.supertokens.webserver.api.thirdparty;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
+import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
+import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.useridmapping.UserIdMapping;
-import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Objects;
 
 public class SignInUpAPI extends WebserverAPI {
 
@@ -49,7 +55,8 @@ public class SignInUpAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        if (super.getVersionFromRequest(req).equals("2.7")) {
+        // API is tenant specific
+        if (super.getVersionFromRequest(req).equals(SemVer.v2_7)) {
             JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
             String thirdPartyId = InputParser.parseStringOrThrowError(input, "thirdPartyId", false);
             String thirdPartyUserId = InputParser.parseStringOrThrowError(input, "thirdPartyUserId", false);
@@ -62,22 +69,44 @@ public class SignInUpAPI extends WebserverAPI {
             assert email != null;
             assert isEmailVerified != null;
 
-            // logic according to https://github.com/supertokens/supertokens-core/issues/190#issuecomment-774671873
+            // logic according to
+            // https://github.com/supertokens/supertokens-core/issues/190#issuecomment-774671873
 
-            String normalisedEmail = Utils.normaliseEmail(email);
+            email = Utils.normaliseEmail(email);
 
             try {
-                ThirdParty.SignInUpResponse response = ThirdParty.signInUp2_7(super.main, thirdPartyId,
-                        thirdPartyUserId, normalisedEmail, isEmailVerified);
+                ThirdParty.SignInUpResponse response = ThirdParty.signInUp2_7(
+                        this.getTenantIdentifierWithStorageFromRequest(req), super.main,
+                        thirdPartyId,
+                        thirdPartyUserId, email, isEmailVerified);
+                UserIdMapping.populateExternalUserIdForUsers(this.getTenantIdentifierWithStorageFromRequest(req), new AuthRecipeUserInfo[]{response.user});
+
+                ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main, response.user.getSupertokensUserId());
 
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
                 result.addProperty("createdNewUser", response.createdNewUser);
-                JsonObject userJson = new JsonParser().parse(new Gson().toJson(response.user)).getAsJsonObject();
+                JsonObject userJson = response.user.toJsonWithoutAccountLinking();
+
+                if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
+                    userJson.remove("tenantIds");
+                }
+
                 result.add("user", userJson);
+                if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0)) {
+                    for (LoginMethod loginMethod : response.user.loginMethods) {
+                        if (loginMethod.recipeId.equals(RECIPE_ID.THIRD_PARTY)
+                                && Objects.equals(loginMethod.thirdParty.id, thirdPartyId)
+                                && Objects.equals(loginMethod.thirdParty.userId, thirdPartyUserId)) {
+                            result.addProperty("recipeUserId", loginMethod.getSupertokensOrExternalUserId());
+                            break;
+                        }
+                    }
+                }
+
                 super.sendJsonResponse(200, result, resp);
 
-            } catch (StorageQueryException e) {
+            } catch (StorageQueryException | TenantOrAppNotFoundException e) {
                 throw new ServletException(e);
             }
         } else {
@@ -87,35 +116,64 @@ public class SignInUpAPI extends WebserverAPI {
             JsonObject emailObject = InputParser.parseJsonObjectOrThrowError(input, "email", false);
             String email = InputParser.parseStringOrThrowError(emailObject, "id", false);
 
+            // setting email verified behaviour is to be done only for CDI 4.0 onwards. version 3.0 and earlier
+            // do not have this field
+            Boolean isEmailVerified = false;
+            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0)) {
+                isEmailVerified = InputParser.parseBooleanOrThrowError(emailObject, "isVerified", false);
+            }
+
             assert thirdPartyId != null;
             assert thirdPartyUserId != null;
             assert email != null;
 
-            // logic according to https://github.com/supertokens/supertokens-core/issues/190#issuecomment-774671873
-            // and modifed according to https://github.com/supertokens/supertokens-core/issues/295
+            // logic according to
+            // https://github.com/supertokens/supertokens-core/issues/190#issuecomment-774671873
+            // and modifed according to
+            // https://github.com/supertokens/supertokens-core/issues/295
 
-            String normalisedEmail = Utils.normaliseEmail(email);
+            email = Utils.normaliseEmail(email);
 
             try {
-                ThirdParty.SignInUpResponse response = ThirdParty.signInUp(super.main, thirdPartyId, thirdPartyUserId,
-                        normalisedEmail);
+                ThirdParty.SignInUpResponse response = ThirdParty.signInUp(
+                        this.getTenantIdentifierWithStorageFromRequest(req), super.main, thirdPartyId, thirdPartyUserId,
+                        email, isEmailVerified);
+                UserIdMapping.populateExternalUserIdForUsers(this.getTenantIdentifierWithStorageFromRequest(req), new AuthRecipeUserInfo[]{response.user});
 
-                //
-                io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                        .getUserIdMapping(main, response.user.id, UserIdType.ANY);
-                if (userIdMapping != null) {
-                    response.user.id = userIdMapping.externalUserId;
-                }
+                ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main, response.user.getSupertokensUserId());
 
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
                 result.addProperty("createdNewUser", response.createdNewUser);
-                JsonObject userJson = new JsonParser().parse(new Gson().toJson(response.user)).getAsJsonObject();
+                JsonObject userJson =
+                        getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? response.user.toJson() :
+                                response.user.toJsonWithoutAccountLinking();
+
+                if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
+                    userJson.remove("tenantIds");
+                }
+
                 result.add("user", userJson);
+                if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0)) {
+                    for (LoginMethod loginMethod : response.user.loginMethods) {
+                        if (loginMethod.recipeId.equals(RECIPE_ID.THIRD_PARTY)
+                                && Objects.equals(loginMethod.thirdParty.id, thirdPartyId)
+                                && Objects.equals(loginMethod.thirdParty.userId, thirdPartyUserId)) {
+                            result.addProperty("recipeUserId", loginMethod.getSupertokensOrExternalUserId());
+                            break;
+                        }
+                    }
+                }
+
                 super.sendJsonResponse(200, result, resp);
 
-            } catch (StorageQueryException e) {
+            } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
                 throw new ServletException(e);
+            } catch (EmailChangeNotAllowedException e) {
+                JsonObject result = new JsonObject();
+                result.addProperty("status", "EMAIL_CHANGE_NOT_ALLOWED_ERROR");
+                result.addProperty("reason", "Email already associated with another primary user.");
+                super.sendJsonResponse(200, result, resp);
             }
         }
 

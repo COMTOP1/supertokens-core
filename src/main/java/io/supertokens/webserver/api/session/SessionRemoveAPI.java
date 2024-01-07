@@ -19,16 +19,22 @@ package io.supertokens.webserver.api.session;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.session.Session;
+import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 public class SessionRemoveAPI extends WebserverAPI {
@@ -45,6 +51,7 @@ public class SessionRemoveAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific. also operates on all tenants in an app if `revokeAcrossAllTenants` is set to true
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String userId = InputParser.parseStringOrThrowError(input, "userId", true);
@@ -71,9 +78,52 @@ public class SessionRemoveAPI extends WebserverAPI {
                     new BadRequestException("Invalid JSON input - use one of userId or sessionHandles array"));
         }
 
+        Boolean revokeAcrossAllTenants = InputParser.parseBooleanOrThrowError(input, "revokeAcrossAllTenants", true);
+        if (userId == null && revokeAcrossAllTenants != null) {
+            throw new ServletException(new BadRequestException(
+                    "Invalid JSON input - revokeAcrossAllTenants can only be set if userId is set"));
+        }
+        if (revokeAcrossAllTenants == null) {
+            revokeAcrossAllTenants = true;
+        }
+
+        Boolean revokeSessionsForLinkedAccounts = InputParser.parseBooleanOrThrowError(input,
+                "revokeSessionsForLinkedAccounts", true);
+        if (userId == null && revokeSessionsForLinkedAccounts != null) {
+            throw new ServletException(new BadRequestException(
+                    "Invalid JSON input - revokeSessionsForLinkedAccounts can only be set if userId is set"));
+        }
+        if (revokeSessionsForLinkedAccounts == null) {
+            revokeSessionsForLinkedAccounts = true;
+        }
+
         if (userId != null) {
             try {
-                String[] sessionHandlesRevoked = Session.revokeAllSessionsForUser(main, userId);
+                String[] sessionHandlesRevoked;
+                if (revokeAcrossAllTenants) {
+                    sessionHandlesRevoked = Session.revokeAllSessionsForUser(
+                            main, this.getAppIdentifierWithStorage(req), userId, revokeSessionsForLinkedAccounts);
+                } else {
+                    sessionHandlesRevoked = Session.revokeAllSessionsForUser(
+                            main, this.getTenantIdentifierWithStorageFromRequest(req), userId,
+                            revokeSessionsForLinkedAccounts);
+                }
+
+                if (StorageLayer.getStorage(this.getTenantIdentifierWithStorageFromRequest(req), main).getType() ==
+                        STORAGE_TYPE.SQL) {
+                    try {
+                        UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                                this.getAppIdentifierWithStorage(req),
+                                userId, UserIdType.ANY);
+                        if (userIdMapping != null) {
+                            ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main,
+                                    userIdMapping.superTokensUserId);
+                        } else {
+                            ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main, userId);
+                        }
+                    } catch (StorageQueryException ignored) {
+                    }
+                }
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
                 JsonArray sessionHandlesRevokedJSON = new JsonArray();
@@ -82,12 +132,13 @@ public class SessionRemoveAPI extends WebserverAPI {
                 }
                 result.add("sessionHandlesRevoked", sessionHandlesRevokedJSON);
                 super.sendJsonResponse(200, result, resp);
-            } catch (StorageQueryException e) {
+            } catch (StorageQueryException | TenantOrAppNotFoundException e) {
                 throw new ServletException(e);
             }
         } else {
             try {
-                String[] sessionHandlesRevoked = Session.revokeSessionUsingSessionHandles(main, sessionHandles);
+                String[] sessionHandlesRevoked = Session.revokeSessionUsingSessionHandles(main,
+                        this.getAppIdentifierWithStorage(req), sessionHandles);
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
                 JsonArray sessionHandlesRevokedJSON = new JsonArray();
@@ -96,7 +147,7 @@ public class SessionRemoveAPI extends WebserverAPI {
                 }
                 result.add("sessionHandlesRevoked", sessionHandlesRevokedJSON);
                 super.sendJsonResponse(200, result, resp);
-            } catch (StorageQueryException e) {
+            } catch (StorageQueryException | TenantOrAppNotFoundException e) {
                 throw new ServletException(e);
             }
         }

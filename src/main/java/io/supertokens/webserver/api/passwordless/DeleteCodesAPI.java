@@ -18,16 +18,18 @@ package io.supertokens.webserver.api.passwordless;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 public class DeleteCodesAPI extends WebserverAPI {
@@ -45,12 +47,13 @@ public class DeleteCodesAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         // Logic based on: https://app.code2flow.com/0493FY2rkyZm
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String email = InputParser.parseStringOrThrowError(input, "email", true);
-        String phoneNumber = InputParser.parseStringOrThrowError(input, "phoneNumber", true);
-
+        String phoneNumber = Utils.normalizeIfPhoneNumber(
+                InputParser.parseStringOrThrowError(input, "phoneNumber", true));
         if (phoneNumber != null && email != null) {
             throw new ServletException(new BadRequestException("Please provide exactly one of email or phoneNumber"));
         }
@@ -60,11 +63,12 @@ public class DeleteCodesAPI extends WebserverAPI {
         }
         try {
             if (email != null) {
-                Passwordless.removeCodesByEmail(main, email);
+                email = Utils.normaliseEmail(email);
+                Passwordless.removeCodesByEmail(this.getTenantIdentifierWithStorageFromRequest(req), email);
             } else {
-                Passwordless.removeCodesByPhoneNumber(main, phoneNumber);
+                Passwordless.removeCodesByPhoneNumber(this.getTenantIdentifierWithStorageFromRequest(req), phoneNumber);
             }
-        } catch (StorageTransactionLogicException | StorageQueryException e) {
+        } catch (StorageTransactionLogicException | StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
         JsonObject result = new JsonObject();
