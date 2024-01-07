@@ -20,17 +20,25 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Tenant APIs
 - Adds `deviceName` in the response of `CreateOrUpdateTotpDeviceAPI` `POST`
 - `VerifyTOTPAPI` changes
-  - Removes `allowUnverifiedDevices` from request body and unverified devices are not allowed
-  - Adds `currentNumberOfFailedAttempts` and `maxNumberOfFailedAttempts` in response when status is 
-    `INVALID_TOTP_ERROR` or `LIMIT_REACHED_ERROR`
-  - Adds status `UNKNOWN_USER_ID_ERROR`
+    - Removes `allowUnverifiedDevices` from request body and unverified devices are not allowed
+    - Adds `currentNumberOfFailedAttempts` and `maxNumberOfFailedAttempts` in response when status is
+      `INVALID_TOTP_ERROR` or `LIMIT_REACHED_ERROR`
+    - Adds status `UNKNOWN_USER_ID_ERROR`
 - `VerifyTotpDeviceAPI` changes
-  - Adds `currentNumberOfFailedAttempts` and `maxNumberOfFailedAttempts` in response when status is
-    `INVALID_TOTP_ERROR` or `LIMIT_REACHED_ERROR`
+    - Adds `currentNumberOfFailedAttempts` and `maxNumberOfFailedAttempts` in response when status is
+      `INVALID_TOTP_ERROR` or `LIMIT_REACHED_ERROR`
 
 ### Migration
 
 - TODO - copy once postgres / mysql changelog is done
+
+## [7.0.16] - 2023-12-04
+
+- Returns 400, instead of 500, for badly typed core config while creating CUD, App or Tenant
+
+## [7.0.15] - 2023-11-28
+
+- Adds test for user pagination from old version
 
 ## [7.0.14] - 2023-11-21
 
