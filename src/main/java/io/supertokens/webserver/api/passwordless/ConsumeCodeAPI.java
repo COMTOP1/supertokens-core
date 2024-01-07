@@ -19,6 +19,7 @@ package io.supertokens.webserver.api.passwordless;
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
+import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.ConsumeCodeResponse;
@@ -29,8 +30,6 @@ import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
-import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -91,7 +90,7 @@ public class ConsumeCodeAPI extends WebserverAPI {
                     getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0));
             io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(this.getTenantIdentifierWithStorageFromRequest(req), new AuthRecipeUserInfo[]{consumeCodeResponse.user});
 
-            ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, consumeCodeResponse.user.getSupertokensUserId());
+            ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main, consumeCodeResponse.user.getSupertokensUserId());
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
@@ -114,6 +113,18 @@ public class ConsumeCodeAPI extends WebserverAPI {
                         break;
                     }
                 }
+            }
+
+            String factorId;
+            if (linkCode != null) {
+                factorId = "link-";
+            } else {
+                factorId = "otp-";
+            }
+            if (consumeCodeResponse.email != null) {
+                factorId += "email";
+            } else {
+                factorId += "phone";
             }
 
             super.sendJsonResponse(200, result, resp);

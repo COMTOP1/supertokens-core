@@ -29,6 +29,7 @@ import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
@@ -76,10 +77,11 @@ public abstract class WebserverAPI extends HttpServlet {
         supportedVersions.add(SemVer.v2_21);
         supportedVersions.add(SemVer.v3_0);
         supportedVersions.add(SemVer.v4_0);
+        supportedVersions.add(SemVer.v5_0);
     }
 
     public static SemVer getLatestCDIVersion() {
-        return SemVer.v4_0;
+        return SemVer.v5_0;
     }
 
     public SemVer getLatestCDIVersionForRequest(HttpServletRequest req)
@@ -337,6 +339,16 @@ public abstract class WebserverAPI extends HttpServlet {
         Storage[] storages = StorageLayer.getStoragesForApp(main, tenantIdentifier.toAppIdentifier());
         return new AppIdentifierWithStorage(tenantIdentifier.getConnectionUriDomain(), tenantIdentifier.getAppId(),
                 storage, storages);
+    }
+
+    protected AppIdentifierWithStorage getPublicTenantStorage(HttpServletRequest req)
+            throws ServletException, TenantOrAppNotFoundException {
+        AppIdentifier appIdentifier = new AppIdentifier(this.getConnectionUriDomain(req), this.getAppId(req));
+
+        Storage storage = StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main);
+
+        return appIdentifier.withStorage(storage);
+
     }
 
     protected TenantIdentifierWithStorageAndUserIdMapping getTenantIdentifierWithStorageAndUserIdMappingFromRequest(
