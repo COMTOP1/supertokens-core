@@ -25,6 +25,7 @@ import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
@@ -77,6 +78,7 @@ public class TestHelloAPIRateLimiting {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(false, null),
                             new PasswordlessConfig(false),
+                            null, null,
                             config
                     )
             );
@@ -97,6 +99,7 @@ public class TestHelloAPIRateLimiting {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(false, null),
                             new PasswordlessConfig(false),
+                            null, null,
                             config
                     )
             );
@@ -117,6 +120,7 @@ public class TestHelloAPIRateLimiting {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(false, null),
                             new PasswordlessConfig(false),
+                            null, null,
                             config
                     )
             );
@@ -152,6 +156,10 @@ public class TestHelloAPIRateLimiting {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createApps(process);
 
         // Call 5 requests rapidly
@@ -179,6 +187,10 @@ public class TestHelloAPIRateLimiting {
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         createApps(process);
 
@@ -219,6 +231,10 @@ public class TestHelloAPIRateLimiting {
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         createApps(process);
 

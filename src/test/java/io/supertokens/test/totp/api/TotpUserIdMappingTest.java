@@ -4,9 +4,8 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
-import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.FeatureFlagTestContent;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
@@ -14,7 +13,6 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.totp.TOTPRecipeTest;
-import io.supertokens.test.totp.TotpLicenseTest;
 import io.supertokens.useridmapping.UserIdMapping;
 
 import static org.junit.Assert.assertNotNull;
@@ -50,12 +48,12 @@ public class TotpUserIdMappingTest {
             return;
         }
 
-        FeatureFlagTestContent.getInstance(process.main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[] { EE_FEATURES.TOTP });
+        FeatureFlagTestContent.getInstance(process.main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[] { EE_FEATURES.MFA });
 
         JsonObject body = new JsonObject();
 
-        UserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        String superTokensUserId = user.id;
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        String superTokensUserId = user.getSupertokensUserId();
         String externalUserId = "external-user-id";
 
         // Create user id mapping first:
@@ -63,7 +61,7 @@ public class TotpUserIdMappingTest {
 
         body.addProperty("userId", externalUserId);
         body.addProperty("deviceName", "d1");
-        body.addProperty("skew", 0);
+        body.addProperty("skew", 1);
         body.addProperty("period", 30);
 
         // Register 1st device
@@ -79,7 +77,7 @@ public class TotpUserIdMappingTest {
                 "totp");
         assert res1.get("status").getAsString().equals("OK");
         String d1Secret = res1.get("secret").getAsString();
-        TOTPDevice device1 = new TOTPDevice(externalUserId, "deviceName", d1Secret, 30, 0, false);
+        TOTPDevice device1 = new TOTPDevice(externalUserId, "deviceName", d1Secret, 30, 1, false, System.currentTimeMillis());
 
         body.addProperty("deviceName", "d2");
 
@@ -95,14 +93,14 @@ public class TotpUserIdMappingTest {
                 "totp");
         assert res2.get("status").getAsString().equals("OK");
         String d2Secret = res2.get("secret").getAsString();
-        TOTPDevice device2 = new TOTPDevice(externalUserId, "deviceName", d2Secret, 30, 0, false);
+        TOTPDevice device2 = new TOTPDevice(externalUserId, "deviceName", d2Secret, 30, 1, false, System.currentTimeMillis());
 
         // Verify d1 but not d2:
         JsonObject verifyD1Input = new JsonObject();
         verifyD1Input.addProperty("userId", externalUserId);
-        String d1Totp = TOTPRecipeTest.generateTotpCode(process.getProcess(), device1);
+        String d1VerifyTotp = TOTPRecipeTest.generateTotpCode(process.getProcess(), device1);
         verifyD1Input.addProperty("deviceName", "d1");
-        verifyD1Input.addProperty("totp", d1Totp );
+        verifyD1Input.addProperty("totp", d1VerifyTotp);
 
         JsonObject verifyD1Res = HttpRequestForTesting.sendJsonPOSTRequest(
                 process.getProcess(),
@@ -118,25 +116,43 @@ public class TotpUserIdMappingTest {
         assert verifyD1Res.get("status").getAsString().equals("OK");
         assert verifyD1Res.get("wasAlreadyVerified").getAsBoolean() == false;
 
-        // use d2 to login in totp:
-        JsonObject loginInput = new JsonObject();
-        loginInput.addProperty("userId", externalUserId);
-        String d2Totp = TOTPRecipeTest.generateTotpCode(process.getProcess(), device2);
-        loginInput.addProperty("totp", d2Totp); // use code from d2 which is unverified
-        loginInput.addProperty("allowUnverifiedDevices", true);
+        // use d2 to login in totp: (should fail coz it's not verified)
+        JsonObject d2LoginInput = new JsonObject();
+        d2LoginInput.addProperty("userId", externalUserId);
+        String d2Totp = TOTPRecipeTest.generateTotpCode(process.getProcess(), device2, 1);
+        d2LoginInput.addProperty("totp", d2Totp); // use code from d2 which is unverified
 
-        JsonObject loginRes = HttpRequestForTesting.sendJsonPOSTRequest(
+        JsonObject d2LoginRes = HttpRequestForTesting.sendJsonPOSTRequest(
                 process.getProcess(),
                 "",
                 "http://localhost:3567/recipe/totp/verify",
-                loginInput,
+                d2LoginInput,
                 1000,
                 1000,
                 null,
                 Utils.getCdiVersionStringLatestForTests(),
                 "totp");
 
-        assert loginRes.get("status").getAsString().equals("OK");
+        assert d2LoginRes.get("status").getAsString().equals("INVALID_TOTP_ERROR");
+
+        // use d1 to login in totp: (should pass)
+        JsonObject d1LoginInput = new JsonObject();
+        d1LoginInput.addProperty("userId", externalUserId);
+        String d1Totp = TOTPRecipeTest.generateTotpCode(process.getProcess(), device1, 1);
+        d1LoginInput.addProperty("totp", d1Totp); // use code from d2 which is unverified
+
+        JsonObject d1LoginRes = HttpRequestForTesting.sendJsonPOSTRequest(
+                process.getProcess(),
+                "",
+                "http://localhost:3567/recipe/totp/verify",
+                d1LoginInput,
+                1000,
+                1000,
+                null,
+                Utils.getCdiVersionStringLatestForTests(),
+                "totp");
+
+        assert d1LoginRes.get("status").getAsString().equals("OK");
 
         // Change the name of d1 to d3:
         JsonObject updateDeviceNameInput = new JsonObject();

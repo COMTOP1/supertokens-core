@@ -24,6 +24,7 @@ import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.LOG_LEVEL;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
@@ -32,6 +33,7 @@ import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import jakarta.servlet.ServletException;
@@ -79,7 +81,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 result = new Start(main);
             }
         }
-        result.constructor(main.getProcessId(), Main.makeConsolePrintSilent);
+        result.constructor(main.getProcessId(), Main.makeConsolePrintSilent, Main.isTesting);
 
         Set<LOG_LEVEL> logLevels = null;
         if (doNotLog) {
@@ -147,8 +149,13 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
                 main.getResourceDistributor()
                         .getAllResourcesWithResourceKey(RESOURCE_KEY);
+        Set<Storage> uniqueStorages = new HashSet<>();
         for (ResourceDistributor.SingletonResource resource : resources.values()) {
-            ((StorageLayer) resource).storage.deleteAllInformation();
+            uniqueStorages.add(((StorageLayer) resource).storage);
+        }
+
+        for (Storage storage : uniqueStorages) {
+            storage.deleteAllInformation();
         }
     }
 
@@ -237,6 +244,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 }
                 main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
 
+                Set<String> userPoolsInUse = new HashSet<>();
+
                 for (ResourceDistributor.KeyClass key : resourceKeyToStorageMap.keySet()) {
                     Storage currStorage = resourceKeyToStorageMap.get(key);
                     String userPoolId = currStorage.getUserPoolId();
@@ -251,23 +260,14 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
                     main.getResourceDistributor().setResource(key.getTenantIdentifier(), RESOURCE_KEY,
                             new StorageLayer(resourceKeyToStorageMap.get(key)));
+
+                    userPoolsInUse.add(userPoolId);
                 }
 
-                // TODO: should the below code be outside of this locked code cause it takes time
-                //  and any other thread that will want access to the resource distributor will have
-                //  to wait for this?
-                // we remove storage layers that are no longer being used
                 for (ResourceDistributor.KeyClass key : existingStorageMap.keySet()) {
-                    try {
-                        if (((StorageLayer) main.getResourceDistributor()
-                                .getResource(key.getTenantIdentifier(), RESOURCE_KEY)).storage !=
-                                ((StorageLayer) existingStorageMap.get(key)).storage) {
-                            // this means that this storage layer is no longer being used, so we close it
-                            ((StorageLayer) existingStorageMap.get(key)).storage.close();
-                            ((StorageLayer) existingStorageMap.get(key)).storage.stopLogging();
-                        }
-                    } catch (TenantOrAppNotFoundException e) {
-                        throw new IllegalStateException(e);
+                    if (!userPoolsInUse.contains(((StorageLayer) existingStorageMap.get(key)).storage.getUserPoolId())) {
+                        ((StorageLayer) existingStorageMap.get(key)).storage.close();
+                        ((StorageLayer) existingStorageMap.get(key)).storage.stopLogging();
                     }
                 }
 
@@ -289,8 +289,11 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                         // we still want other tenants to continue to work
                     }
                 }
+
                 return null;
             });
+
+
         } catch (ResourceDistributor.FuncException e) {
             throw new RuntimeException(e);
         }
@@ -414,8 +417,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
         if (userIdType != UserIdType.SUPERTOKENS) {
             try {
-                io.supertokens.useridmapping.UserIdMapping.assertThatUserIdIsNotBeingUsedInNonAuthRecipes(
-                        tenantIdentifierWithStorage.toAppIdentifierWithStorage(), userId);
+                io.supertokens.useridmapping.UserIdMapping.findNonAuthStoragesWhereUserIdIsUsedOrAssertIfUsed(
+                        tenantIdentifierWithStorage.toAppIdentifierWithStorage(), userId, true);
             } catch (ServletException e) {
                 // this means that the userId is being used for a non auth recipe.
                 return new TenantIdentifierWithStorageAndUserIdMapping(
@@ -456,8 +459,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             if (userIdType != UserIdType.SUPERTOKENS) {
                 AppIdentifierWithStorage appIdentifierWithStorage = appIdentifier.withStorage(priorityStorage);
                 try {
-                    io.supertokens.useridmapping.UserIdMapping.assertThatUserIdIsNotBeingUsedInNonAuthRecipes(
-                            appIdentifierWithStorage, userId);
+                    io.supertokens.useridmapping.UserIdMapping.findNonAuthStoragesWhereUserIdIsUsedOrAssertIfUsed(
+                            appIdentifierWithStorage, userId, true);
                 } catch (ServletException e) {
                     // this means that the userId is being used for a non auth recipe.
                     return new AppIdentifierWithStorageAndUserIdMapping(appIdentifierWithStorage, null);
@@ -487,8 +490,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             if (userIdType != UserIdType.SUPERTOKENS) {
                 AppIdentifierWithStorage appIdentifierWithStorage = appIdentifier.withStorage(storage);
                 try {
-                    io.supertokens.useridmapping.UserIdMapping.assertThatUserIdIsNotBeingUsedInNonAuthRecipes(
-                            appIdentifierWithStorage, userId);
+                    io.supertokens.useridmapping.UserIdMapping.findNonAuthStoragesWhereUserIdIsUsedOrAssertIfUsed(
+                            appIdentifierWithStorage, userId, true);
                 } catch (ServletException e) {
                     // this means that the userId is being used for a non auth recipe.
                     return new AppIdentifierWithStorageAndUserIdMapping(appIdentifierWithStorage, null);
@@ -497,5 +500,16 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
 
         throw new UnknownUserIdException();
+    }
+
+    public static ThirdPartySQLStorage getThirdPartyStorage(TenantIdentifier tenantIdentifier, Main main) throws TenantOrAppNotFoundException {
+        if (getInstance(tenantIdentifier, main) == null) {
+            throw new QuitProgramException("please call init() before calling getStorageLayer");
+        }
+        if (getInstance(tenantIdentifier, main).storage.getType() != STORAGE_TYPE.SQL) {
+            // we only support SQL for now
+            throw new UnsupportedOperationException("");
+        }
+        return (ThirdPartySQLStorage) getInstance(tenantIdentifier, main).storage;
     }
 }

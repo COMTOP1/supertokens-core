@@ -1,5 +1,5 @@
 /*
- *    Copyright (c) 2021, VRAI Labs and/or its affiliates. All rights reserved.
+ *    Copyright (c) 2023, VRAI Labs and/or its affiliates. All rights reserved.
  *
  *    This software is licensed under the Apache License, Version 2.0 (the
  *    "License") as published by the Apache Software Foundation.
@@ -14,19 +14,24 @@
  *    under the License.
  */
 
-package io.supertokens.emailpassword;
+package io.supertokens.inmemorydb.queries.utils;
 
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+public class JsonUtils {
+    public static String jsonObjectToString(JsonObject obj) {
+        if (obj == null) {
+            return null;
+        }
+        return obj.toString();
+    }
 
-public class UserPaginationContainer {
-    public final UserInfo[] users;
-    public final String nextPaginationToken;
-
-    public UserPaginationContainer(@Nonnull UserInfo[] users, @Nullable String nextPaginationToken) {
-        this.users = users;
-        this.nextPaginationToken = nextPaginationToken;
+    public static JsonObject stringToJsonObject(String json) {
+        if (json == null) {
+            return null;
+        }
+        JsonParser jp = new JsonParser();
+        return jp.parse(json).getAsJsonObject();
     }
 }

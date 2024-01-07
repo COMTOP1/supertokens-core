@@ -16,10 +16,14 @@
 
 package io.supertokens.test.session;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.supertokens.ProcessState.EventAndException;
 import io.supertokens.ProcessState.PROCESS_STATE;
+import io.supertokens.exceptions.AccessTokenPayloadError;
 import io.supertokens.exceptions.TryRefreshTokenException;
+import io.supertokens.jwt.JWTSigningFunctions;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -47,6 +51,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Base64;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -101,7 +106,7 @@ public class AccessTokenTest {
 
         // check payload is fine
         assertEquals(accessTokenInfo.userData, userDataInJWT);
-        assertEquals(accessTokenInfo.userId, userId);
+        assertEquals(accessTokenInfo.recipeUserId, userId);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
@@ -138,7 +143,7 @@ public class AccessTokenTest {
 
         // check payload is fine
         assertEquals(accessTokenInfo.userData, userDataInJWT);
-        assertEquals(accessTokenInfo.userId, userId);
+        assertEquals(accessTokenInfo.recipeUserId, userId);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
@@ -252,7 +257,8 @@ public class AccessTokenTest {
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(e);
         JsonObject jsonObj = new JsonObject();
-        jsonObj.addProperty("key", "value");
+        String testValue = "asdf???123";
+        jsonObj.addProperty("key", testValue);
 
         // db key
         long expiryTime = System.currentTimeMillis() + 1000;
@@ -261,12 +267,17 @@ public class AccessTokenTest {
                 AccessToken.getLatestVersion(), false);
         AccessTokenInfo info = AccessToken.getInfoFromAccessToken(process.getProcess(), newToken.token, true);
         assertEquals("sessionHandle", info.sessionHandle);
-        assertEquals("userId", info.userId);
+        assertEquals("userId", info.recipeUserId);
         assertEquals("refreshTokenHash1", info.refreshTokenHash1);
         assertEquals("parentRefreshTokenHash1", info.parentRefreshTokenHash1);
-        assertEquals("value", info.userData.get("key").getAsString());
+        assertEquals(testValue, info.userData.get("key").getAsString());
         assertEquals("antiCsrfToken", info.antiCsrfToken);
         assertEquals(expiryTime / 1000 * 1000, info.expiryTime);
+
+        JsonObject payload = (JsonObject) new JsonParser()
+                .parse(io.supertokens.utils.Utils.convertFromBase64(newToken.token.split("\\.")[1]));
+        // This throws if the number is in scientific (E) format
+        assertEquals(expiryTime / 1000, Long.parseLong(payload.get("exp").toString()));
 
         JWT.JWTPreParseInfo jwtInfo = JWT.preParseJWTInfo(newToken.token);
         assertNotNull(jwtInfo.kid);
@@ -282,21 +293,28 @@ public class AccessTokenTest {
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(e);
         JsonObject jsonObj = new JsonObject();
-        jsonObj.addProperty("key", "value");
+        String testValue = "asdf???123";
+        jsonObj.addProperty("key", testValue);
 
         // db key
         long expiryTime = System.currentTimeMillis() + 1000;
         TokenInfo newToken = AccessToken.createNewAccessToken(process.getProcess(), "sessionHandle", "userId",
                 "refreshTokenHash1", "parentRefreshTokenHash1", jsonObj, "antiCsrfToken", expiryTime,
                 AccessToken.getLatestVersion(), true);
+        System.out.println(newToken.token);
         AccessTokenInfo info = AccessToken.getInfoFromAccessToken(process.getProcess(), newToken.token, true);
         assertEquals("sessionHandle", info.sessionHandle);
-        assertEquals("userId", info.userId);
+        assertEquals("userId", info.recipeUserId);
         assertEquals("refreshTokenHash1", info.refreshTokenHash1);
         assertEquals("parentRefreshTokenHash1", info.parentRefreshTokenHash1);
-        assertEquals("value", info.userData.get("key").getAsString());
+        assertEquals(testValue, info.userData.get("key").getAsString());
         assertEquals("antiCsrfToken", info.antiCsrfToken);
         assertEquals(expiryTime / 1000 * 1000, info.expiryTime);
+
+        JsonObject payload = (JsonObject) new JsonParser()
+                .parse(io.supertokens.utils.Utils.convertFromBase64(newToken.token.split("\\.")[1]));
+        // This throws if the number is in scientific (E) format
+        assertEquals(expiryTime / 1000, Long.parseLong(payload.get("exp").toString()));
 
         JWT.JWTPreParseInfo jwtInfo = JWT.preParseJWTInfo(newToken.token);
         assertNotNull(jwtInfo.kid);
@@ -311,7 +329,8 @@ public class AccessTokenTest {
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(e);
         JsonObject jsonObj = new JsonObject();
-        jsonObj.addProperty("key", "value");
+        String testValue = "asdf???123";
+        jsonObj.addProperty("key", testValue);
 
         // db key
         long expiryTime = System.currentTimeMillis() + 1000;
@@ -320,12 +339,18 @@ public class AccessTokenTest {
                 AccessToken.VERSION.V2, false);
         AccessTokenInfo info = AccessToken.getInfoFromAccessToken(process.getProcess(), newToken.token, true);
         assertEquals("sessionHandle", info.sessionHandle);
-        assertEquals("userId", info.userId);
+        assertEquals("userId", info.recipeUserId);
         assertEquals("refreshTokenHash1", info.refreshTokenHash1);
         assertEquals("parentRefreshTokenHash1", info.parentRefreshTokenHash1);
-        assertEquals("value", info.userData.get("key").getAsString());
+        assertEquals(testValue, info.userData.get("key").getAsString());
         assertEquals("antiCsrfToken", info.antiCsrfToken);
         assertEquals(expiryTime, info.expiryTime);
+
+        JsonObject payload = (JsonObject) new JsonParser()
+                .parse(io.supertokens.utils.Utils.convertFromBase64(newToken.token.split("\\.")[1]));
+        // This throws if the number is in scientific (E) format
+        assertEquals(expiryTime, Long.parseLong(payload.get("expiryTime").toString()));
+
         process.kill();
     }
 
@@ -333,24 +358,31 @@ public class AccessTokenTest {
     public void inputOutputTestv1() throws InterruptedException, InvalidKeyException, NoSuchAlgorithmException,
             StorageQueryException, StorageTransactionLogicException, TryRefreshTokenException,
             UnsupportedEncodingException, InvalidKeySpecException, SignatureException,
-            UnsupportedJWTSigningAlgorithmException {
+            UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError {
         String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(e);
         JsonObject jsonObj = new JsonObject();
-        jsonObj.addProperty("key", "value");
+        String testValue = "asdf???123";
+        jsonObj.addProperty("key", testValue);
 
         // db key
         TokenInfo newToken = AccessToken.createNewAccessTokenV1(process.getProcess(), "sessionHandle", "userId",
                 "refreshTokenHash1", "parentRefreshTokenHash1", jsonObj, "antiCsrfToken");
         AccessTokenInfo info = AccessToken.getInfoFromAccessToken(process.getProcess(), newToken.token, true);
         assertEquals("sessionHandle", info.sessionHandle);
-        assertEquals("userId", info.userId);
+        assertEquals("userId", info.recipeUserId);
         assertEquals("refreshTokenHash1", info.refreshTokenHash1);
         assertEquals("parentRefreshTokenHash1", info.parentRefreshTokenHash1);
-        assertEquals("value", info.userData.get("key").getAsString());
+        assertEquals(testValue, info.userData.get("key").getAsString());
         assertEquals("antiCsrfToken", info.antiCsrfToken);
+
+        JsonObject payload = (JsonObject) new JsonParser()
+                .parse(io.supertokens.utils.Utils.convertFromBase64(newToken.token.split("\\.")[1]));
+        // This throws if the number is in scientific (E) format
+        Long.parseLong(payload.get("expiryTime").toString());
+
         process.kill();
     }
 
@@ -485,5 +517,42 @@ public class AccessTokenTest {
         assert (!hasNullPointerException.get());
 
         process.kill();
+    }
+
+    @Test
+    public void testThatWeUseLatestVersionIfHeaderHasNoVersion() throws Exception {
+        String[] args = {"../"};
+        TestingProcess process = TestingProcessManager.start(args);
+        EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
+        assertNotNull(e);
+
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        JsonObject userDataInDatabase = new JsonObject();
+        SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
+                userDataInDatabase);
+
+        String accessToken = sessionInfo.accessToken.token;
+        String payloadString = accessToken.split("\\.")[1];
+        String decodedPayload = new String(Base64.getUrlDecoder().decode(payloadString));
+        JsonObject accessTokenPayload = new Gson().fromJson(decodedPayload, JsonObject.class);
+        accessTokenPayload.remove("iat");
+        accessTokenPayload.remove("exp");
+
+        String algorithm = "RS256";
+        String jwksDomain = "http://localhost";
+        long validity = 3600;
+
+        String jwt = JWTSigningFunctions.createJWTToken(process.main, algorithm, accessTokenPayload, jwksDomain,
+                validity, false);
+
+        String header = jwt.split("\\.")[0];
+        String decodedHeader = new String(Base64.getUrlDecoder().decode(header));
+        JsonObject headerObject = new Gson().fromJson(decodedHeader, JsonObject.class);
+        // Verify that by default the version is not present
+        assertNull(headerObject.get("version"));
+
+        JWT.JWTPreParseInfo info = JWT.preParseJWTInfo(jwt);
+        assert info.version == AccessToken.getLatestVersion();
     }
 }

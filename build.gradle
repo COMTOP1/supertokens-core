@@ -19,14 +19,15 @@ compileTestJava { options.encoding = "UTF-8" }
 //    }
 //}
 
-version = "5.0.0"
-
+version = "7.0.16"
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
+
+    implementation files('/Users/liam/Code/Java/supertokens-plugin-interface/build/libs/plugin-interface-4.0.5.jar')
 
     // https://mvnrepository.com/artifact/com.google.code.gson/gson
     // if this changes, remember to also change in the ee folder's build.gradle
@@ -71,8 +72,11 @@ dependencies {
     // https://mvnrepository.com/artifact/commons-codec/commons-codec
     implementation group: 'commons-codec', name: 'commons-codec', version: '1.15'
 
-    compileOnly project(":supertokens-plugin-interface")
-    testImplementation project(":supertokens-plugin-interface")
+    // https://mvnrepository.com/artifact/com.googlecode.libphonenumber/libphonenumber/
+    implementation group: 'com.googlecode.libphonenumber', name: 'libphonenumber', version: '8.13.25'
+
+//    compileOnly project(":supertokens-plugin-interface")
+//    testImplementation project(":supertokens-plugin-interface")
 
     // this is so that we can find plugin-interface jar while testing
     testImplementation 'junit:junit:4.12'

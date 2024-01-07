@@ -18,11 +18,14 @@ package io.supertokens.test.emailpassword.api;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -124,7 +127,7 @@ public class EmailPasswordGetUserAPITest2_7 {
             assertEquals(signUpUser.get("email").getAsString(), userInfo.get("email").getAsString());
             assertEquals(signUpUser.get("id").getAsString(), userInfo.get("id").getAsString());
             signUpUser.get("timeJoined").getAsLong();
-            assertEquals(signUpUser.entrySet().size(), 4);
+            assertEquals(signUpUser.entrySet().size(), 3);
         }
 
         {
@@ -149,7 +152,7 @@ public class EmailPasswordGetUserAPITest2_7 {
             assertEquals(signUpUser.get("email").getAsString(), userInfo.get("email").getAsString());
             assertEquals(signUpUser.get("id").getAsString(), userInfo.get("id").getAsString());
             signUpUser.get("timeJoined").getAsLong();
-            assertEquals(signUpUser.entrySet().size(), 4);
+            assertEquals(signUpUser.entrySet().size(), 3);
         }
 
         process.kill();
@@ -189,6 +192,46 @@ public class EmailPasswordGetUserAPITest2_7 {
                     "emailpassword");
             assertEquals(response.get("status").getAsString(), "UNKNOWN_USER_ID_ERROR");
             assertEquals(response.entrySet().size(), 1);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testGetUserForUsersOfOtherRecipeIds() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo user1 = ThirdParty.signInUp(process.getProcess(), "google", "googleid", "test@example.com").user;
+        Passwordless.CreateCodeResponse user2code = Passwordless.createCode(process.getProcess(), "test@example.com",
+                null, null, null);
+        AuthRecipeUserInfo user2 = Passwordless.consumeCode(process.getProcess(), user2code.deviceId, user2code.deviceIdHash, user2code.userInputCode, null).user;
+
+        {
+            HashMap<String, String> map = new HashMap<>();
+            map.put("userId", user1.getSupertokensUserId());
+
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user", map, 1000, 1000, null, SemVer.v2_7.get(),
+                    "emailpassword");
+            assertEquals(response.get("status").getAsString(), "UNKNOWN_USER_ID_ERROR");
+        }
+
+        {
+            HashMap<String, String> map = new HashMap<>();
+            map.put("userId", user2.getSupertokensUserId());
+
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user", map, 1000, 1000, null, SemVer.v2_7.get(),
+                    "emailpassword");
+            assertEquals(response.get("status").getAsString(), "UNKNOWN_USER_ID_ERROR");
         }
 
         process.kill();

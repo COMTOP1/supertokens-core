@@ -27,6 +27,7 @@ import io.supertokens.cronjobs.deleteExpiredPasswordResetTokens.DeleteExpiredPas
 import io.supertokens.cronjobs.deleteExpiredPasswordlessDevices.DeleteExpiredPasswordlessDevices;
 import io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions;
 import io.supertokens.cronjobs.deleteExpiredTotpTokens.DeleteExpiredTotpTokens;
+import io.supertokens.cronjobs.syncCoreConfigWithDb.SyncCoreConfigWithDb;
 import io.supertokens.cronjobs.telemetry.Telemetry;
 import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.exceptions.QuitProgramException;
@@ -156,6 +157,9 @@ public class Main {
             throw new QuitProgramException(e);
         }
 
+        // loading version file
+        Version.loadVersion(this, CLIOptions.get(this).getInstallationPath() + "version.yaml");
+
         Logging.info(this, TenantIdentifier.BASE_TENANT, "Completed config.yaml loading.", true);
 
         // loading storage layer
@@ -165,9 +169,6 @@ public class Main {
         } catch (InvalidConfigException e) {
             throw new QuitProgramException(e);
         }
-
-        // loading version file
-        Version.loadVersion(this, CLIOptions.get(this).getInstallationPath() + "version.yaml");
 
         // init file logging
         Logging.initFileLogging(this);
@@ -200,9 +201,8 @@ public class Main {
                 }
             }
         }
-        FeatureFlag.initForBaseTenant(this, CLIOptions.get(this).getInstallationPath() + "ee/");
-
         MultitenancyHelper.init(this);
+        FeatureFlag.initForBaseTenant(this, CLIOptions.get(this).getInstallationPath() + "ee/");
 
         try {
             // load all configs for each of the tenants.
@@ -226,6 +226,8 @@ public class Main {
 
         // starts removing old session cronjob
         List<List<TenantIdentifier>> uniqueUserPoolIdsTenants = StorageLayer.getTenantsWithUniqueUserPoolId(this);
+
+        Cronjobs.addCronjob(this, SyncCoreConfigWithDb.init(this));
 
         Cronjobs.addCronjob(this, DeleteExpiredSessions.init(this, uniqueUserPoolIdsTenants));
 
@@ -251,6 +253,9 @@ public class Main {
 
         // starts DeleteExpiredAccessTokenSigningKeys cronjob if the access token signing keys can change
         Cronjobs.addCronjob(this, DeleteExpiredAccessTokenSigningKeys.init(this, uniqueUserPoolIdsTenants));
+
+        // this is to ensure tenantInfos are in sync for the new cron job as well
+        MultitenancyHelper.getInstance(this).refreshCronjobs();
 
         // creates password hashing pool
         PasswordHashing.init(this);

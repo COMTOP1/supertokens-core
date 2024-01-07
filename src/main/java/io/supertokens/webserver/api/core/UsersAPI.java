@@ -16,21 +16,22 @@
 
 package io.supertokens.webserver.api.core;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.authRecipe.UserPaginationContainer;
 import io.supertokens.authRecipe.UserPaginationToken;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -167,25 +168,30 @@ public class UsersAPI extends WebserverAPI {
                     limit, timeJoinedOrder, paginationToken,
                     recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new), searchTags);
 
-            ArrayList<String> userIds = new ArrayList<>();
-            for (int i = 0; i < users.users.length; i++) {
-                userIds.add(users.users[i].user.id);
-            }
-            HashMap<String, String> userIdMapping = UserIdMapping.getUserIdMappingForSuperTokensUserIds(
-                    tenantIdentifierWithStorage, userIds);
-            if (!userIdMapping.isEmpty()) {
-                for (int i = 0; i < users.users.length; i++) {
-                    String externalId = userIdMapping.get(userIds.get(i));
-                    if (externalId != null) {
-                        users.users[i].user.id = externalId;
-                    }
-                }
-            }
+            UserIdMapping.populateExternalUserIdForUsers(tenantIdentifierWithStorage, users.users);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
 
-            JsonArray usersJson = new JsonParser().parse(new Gson().toJson(users.users)).getAsJsonArray();
+            JsonArray usersJson = new JsonArray();
+            for (AuthRecipeUserInfo user : users.users) {
+                if (getVersionFromRequest(req).lesserThan(SemVer.v4_0)) {
+                    JsonObject jsonObj = new JsonObject();
+                    jsonObj.addProperty("recipeId", user.loginMethods[0].recipeId.toString());
+                    JsonObject userJson = user.toJsonWithoutAccountLinking();
+                    jsonObj.add("user", userJson);
+                    usersJson.add(jsonObj);
+                } else {
+                    usersJson.add(user.toJson());
+                }
+            }
+
+            if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
+                for (JsonElement user : usersJson) {
+                    user.getAsJsonObject().get("user").getAsJsonObject().remove("tenantIds");
+                }
+            }
+
             result.add("users", usersJson);
 
             if (users.nextPaginationToken != null) {

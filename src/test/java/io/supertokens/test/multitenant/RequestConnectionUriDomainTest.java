@@ -19,7 +19,6 @@ package io.supertokens.test.multitenant;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.ProcessState;
-import io.supertokens.config.Config;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
@@ -28,6 +27,7 @@ import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
@@ -36,10 +36,10 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
-import io.supertokens.test.multitenant.api.TestMultitenancyAPIHelper;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.webserver.Webserver;
 import io.supertokens.webserver.WebserverAPI;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.AfterClass;
@@ -86,7 +86,8 @@ public class RequestConnectionUriDomainTest {
             }
 
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException,
+                    ServletException {
                 super.sendTextResponse(200, getTenantIdentifierFromRequest(req).getConnectionUriDomain(), resp);
             }
         });
@@ -122,6 +123,14 @@ public class RequestConnectionUriDomainTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         JsonObject tenantConfig = new JsonObject();
         tenantConfig.add("api_keys", new JsonPrimitive("abctijenbogweg=-2438243u98"));
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
@@ -131,14 +140,14 @@ public class RequestConnectionUriDomainTest {
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                 .modifyConfigToAddANewUserPoolForTesting(tenant2Config, 3);
 
-        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(new TenantIdentifier("localhost:3567", null, null), new EmailPasswordConfig(false),
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(new TenantIdentifier("localhost", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenantConfig), false);
-        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(new TenantIdentifier("127.0.0.1:3567", null, null), new EmailPasswordConfig(false),
+                null, null, tenantConfig), false);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(new TenantIdentifier("127.0.0.1", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenant2Config), false);
+                null, null, tenant2Config), false);
 
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
 
@@ -148,7 +157,8 @@ public class RequestConnectionUriDomainTest {
             }
 
             @Override
-            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException,
+                    ServletException {
                 super.sendTextResponse(200,
                         super.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
                                 super.getTenantIdentifierFromRequest(req).getTenantId(), resp);
@@ -160,7 +170,7 @@ public class RequestConnectionUriDomainTest {
                     "http://localhost:3567/test", new JsonObject(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(),
                     "abctijenbogweg=-2438243u98", "");
-            assertEquals("localhost:3567,public", response);
+            assertEquals("localhost,public", response);
         }
 
         {
@@ -168,7 +178,7 @@ public class RequestConnectionUriDomainTest {
                     "http://127.0.0.1:3567/test", new JsonObject(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(),
                     "abcasdfaliojmo3jenbogweg=-9382923", "");
-            assertEquals("127.0.0.1:3567,public", response);
+            assertEquals("127.0.0.1,public", response);
         }
         {
             try {
@@ -215,6 +225,14 @@ public class RequestConnectionUriDomainTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         JsonObject tenantConfig = new JsonObject();
         tenantConfig.add("api_keys", new JsonPrimitive("abctijenbogweg=-2438243u98"));
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
@@ -226,34 +244,34 @@ public class RequestConnectionUriDomainTest {
 
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
-                new TenantConfig(new TenantIdentifier("localhost:3567", null, null), new EmailPasswordConfig(false),
+                new TenantConfig(new TenantIdentifier("localhost", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenantConfig),
+                        null, null, tenantConfig),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
-                new TenantConfig(new TenantIdentifier("localhost:3567", null, "t1"), new EmailPasswordConfig(false),
+                new TenantConfig(new TenantIdentifier("localhost", null, "t1"), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenantConfig),
+                        null, null, tenantConfig),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
-                new TenantConfig(new TenantIdentifier("127.0.0.1:3567", null, null), new EmailPasswordConfig(false),
+                new TenantConfig(new TenantIdentifier("127.0.0.1", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenant2Config),
+                        null, null, tenant2Config),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
-                new TenantConfig(new TenantIdentifier("127.0.0.1:3567", null, "t1"), new EmailPasswordConfig(false),
+                new TenantConfig(new TenantIdentifier("127.0.0.1", null, "t1"), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenant2Config),
+                        null, null, tenant2Config),
                 false
         );
 
@@ -265,7 +283,8 @@ public class RequestConnectionUriDomainTest {
             }
 
             @Override
-            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException,
+                    ServletException {
                 super.sendTextResponse(200,
                         super.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
                                 super.getTenantIdentifierFromRequest(req).getTenantId(), resp);
@@ -277,7 +296,7 @@ public class RequestConnectionUriDomainTest {
                     "http://localhost:3567/test", new JsonObject(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(),
                     "abctijenbogweg=-2438243u98", "");
-            assertEquals("localhost:3567,public", response);
+            assertEquals("localhost,public", response);
         }
 
         {
@@ -285,14 +304,14 @@ public class RequestConnectionUriDomainTest {
                     "http://127.0.0.1:3567/test", new JsonObject(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(),
                     "abcasdfaliojmo3jenbogweg=-9382923", "");
-            assertEquals("127.0.0.1:3567,public", response);
+            assertEquals("127.0.0.1,public", response);
         }
         {
             String response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/t1/test", new JsonObject(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(),
                     "abctijenbogweg=-2438243u98", "");
-            assertEquals("localhost:3567,t1", response);
+            assertEquals("localhost,t1", response);
         }
 
         {
@@ -300,7 +319,7 @@ public class RequestConnectionUriDomainTest {
                     "http://127.0.0.1:3567/t1/test", new JsonObject(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(),
                     "abcasdfaliojmo3jenbogweg=-9382923", "");
-            assertEquals("127.0.0.1:3567,t1", response);
+            assertEquals("127.0.0.1,t1", response);
         }
 
         {

@@ -39,8 +39,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public abstract class Utils extends Mockito {
 
@@ -193,6 +192,18 @@ public abstract class Utils extends Mockito {
                 "emailpassword");
     }
 
+    public static JsonObject signUpRequest_3_0(TestingProcessManager.TestingProcess process, String email,
+                                               String password) throws IOException, HttpResponseException {
+
+        JsonObject signUpRequestBody = new JsonObject();
+        signUpRequestBody.addProperty("email", email);
+        signUpRequestBody.addProperty("password", password);
+
+        return HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/signup", signUpRequestBody, 1000, 1000, null, SemVer.v3_0.get(),
+                "emailpassword");
+    }
+
     public static JsonObject signInUpRequest_2_7(TestingProcessManager.TestingProcess process, String email,
                                                  boolean isVerified, String thirdPartyId, String thirdPartyUserId)
             throws IOException, HttpResponseException {
@@ -251,5 +262,11 @@ public abstract class Utils extends Mockito {
         UserIdMapping retrievedMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
                 userIdMapping.superTokensUserId, UserIdType.SUPERTOKENS);
         assertEquals(userIdMapping, retrievedMapping);
+    }
+
+    public static <T> void assertArrayEqualsIgnoreOrder(T[] array1, T[] array2) {
+        assertTrue(
+                array1.length == array2.length && Arrays.asList(array1).containsAll(Arrays.asList(array2))
+                        && Arrays.asList(array2).containsAll(Arrays.asList(array1)));
     }
 }

@@ -24,6 +24,9 @@ import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.config.CoreConfigTestContent;
+import io.supertokens.config.annotations.ConfigYamlOnly;
+import io.supertokens.config.annotations.IgnoreForAnnotationCheck;
+import io.supertokens.config.annotations.NotConflictingInApp;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.FeatureFlagTestContent;
@@ -51,6 +54,7 @@ import org.junit.rules.TestRule;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 
 import static junit.framework.TestCase.assertEquals;
@@ -135,6 +139,14 @@ public class ConfigTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         JsonObject tenantConfig = new JsonObject();
         tenantConfig.add("refresh_token_validity", new JsonPrimitive(144002));
         tenantConfig.add("password_reset_token_lifetime", new JsonPrimitive(3600001));
@@ -145,7 +157,7 @@ public class ConfigTest {
                 new TenantConfig(new TenantIdentifier("abc", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenantConfig)}, new ArrayList<>());
+                        null, null, tenantConfig)}, new ArrayList<>());
 
         Assert.assertEquals(Config.getConfig(process.getProcess()).getRefreshTokenValidity(),
                 (long) 144001 * 60 * 1000);
@@ -197,7 +209,7 @@ public class ConfigTest {
                     new TenantConfig(new TenantIdentifier("abc", null, null), new EmailPasswordConfig(false),
                             new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                             new PasswordlessConfig(false),
-                            tenantConfig)}, new ArrayList<>());
+                            null, null, tenantConfig)}, new ArrayList<>());
             fail();
         } catch (InvalidConfigException e) {
             assert (e.getMessage()
@@ -221,6 +233,10 @@ public class ConfigTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         JsonObject tenantConfig = new JsonObject();
         tenantConfig.add("access_token_signing_key_dynamic", new JsonPrimitive(false));
 
@@ -229,7 +245,7 @@ public class ConfigTest {
                     new TenantConfig(new TenantIdentifier(null, null, "abc"), new EmailPasswordConfig(false),
                             new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                             new PasswordlessConfig(false),
-                            tenantConfig)}, new ArrayList<>());
+                            null, null, tenantConfig)}, new ArrayList<>());
             fail();
         } catch (InvalidConfigException e) {
             assert (e.getMessage()
@@ -253,6 +269,14 @@ public class ConfigTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         Storage storage = StorageLayer.getStorage(process.getProcess());
         if (storage.getType() == STORAGE_TYPE.SQL
                 && !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
@@ -271,7 +295,7 @@ public class ConfigTest {
                     new TenantConfig(new TenantIdentifier("abc", null, null), new EmailPasswordConfig(false),
                             new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                             new PasswordlessConfig(false),
-                            tenantConfig)}, new ArrayList<>());
+                            null, null, tenantConfig)}, new ArrayList<>());
 
         }
 
@@ -301,6 +325,14 @@ public class ConfigTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         TenantConfig[] tenants = new TenantConfig[4];
 
         {
@@ -312,7 +344,7 @@ public class ConfigTest {
             tenants[0] = new TenantConfig(new TenantIdentifier("c1", null, null), new EmailPasswordConfig(false),
                     new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                     new PasswordlessConfig(false),
-                    tenantConfig);
+                    null, null, tenantConfig);
         }
 
         {
@@ -323,7 +355,7 @@ public class ConfigTest {
             tenants[1] = new TenantConfig(new TenantIdentifier("c1", null, "t1"), new EmailPasswordConfig(false),
                     new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                     new PasswordlessConfig(false),
-                    tenantConfig);
+                    null, null, tenantConfig);
         }
 
         {
@@ -332,7 +364,7 @@ public class ConfigTest {
             tenants[2] = new TenantConfig(new TenantIdentifier(null, null, "t2"), new EmailPasswordConfig(false),
                     new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                     new PasswordlessConfig(false),
-                    tenantConfig);
+                    null, null, tenantConfig);
         }
 
         {
@@ -341,7 +373,7 @@ public class ConfigTest {
             tenants[3] = new TenantConfig(new TenantIdentifier(null, null, "t1"), new EmailPasswordConfig(false),
                     new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                     new PasswordlessConfig(false),
-                    tenantConfig);
+                    null, null, tenantConfig);
         }
 
         Config.loadAllTenantConfig(process.getProcess(), tenants, new ArrayList<>());
@@ -388,6 +420,14 @@ public class ConfigTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         TenantConfig[] tenants = new TenantConfig[2];
 
         {
@@ -399,7 +439,7 @@ public class ConfigTest {
             tenants[0] = new TenantConfig(new TenantIdentifier("c1", null, null), new EmailPasswordConfig(false),
                     new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                     new PasswordlessConfig(false),
-                    tenantConfig);
+                    null, null, tenantConfig);
         }
 
         {
@@ -410,7 +450,7 @@ public class ConfigTest {
             tenants[1] = new TenantConfig(new TenantIdentifier("c2", null, null), new EmailPasswordConfig(false),
                     new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                     new PasswordlessConfig(false),
-                    tenantConfig);
+                    null, null, tenantConfig);
         }
 
         try {
@@ -438,6 +478,10 @@ public class ConfigTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
@@ -446,7 +490,7 @@ public class ConfigTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 )
         );
 
@@ -458,7 +502,7 @@ public class ConfigTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 )
         );
 
@@ -470,7 +514,7 @@ public class ConfigTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 )
         );
 
@@ -482,7 +526,7 @@ public class ConfigTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 )
         );
 
@@ -494,7 +538,7 @@ public class ConfigTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 )
         );
 
@@ -506,7 +550,7 @@ public class ConfigTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 )
         );
 
@@ -514,92 +558,98 @@ public class ConfigTest {
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                 .modifyConfigToAddANewUserPoolForTesting(config, 2);
 
-        Multitenancy.addNewOrUpdateAppOrTenant(
-                process.getProcess(),
-                new TenantIdentifier(null, null, null),
-                new TenantConfig(
-                        new TenantIdentifier("c1", null, null),
-                        new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, null),
-                        new PasswordlessConfig(true),
-                        config
-                )
-        );
+        if (!StorageLayer.isInMemDb(process.getProcess())) {
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    new TenantConfig(
+                            new TenantIdentifier("c1", null, null),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            null, null, config
+                    )
+            );
 
-        Multitenancy.addNewOrUpdateAppOrTenant(
-                process.getProcess(),
-                new TenantIdentifier("c1", null, null),
-                new TenantConfig(
-                        new TenantIdentifier("c1", null, "t1"),
-                        new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, null),
-                        new PasswordlessConfig(true),
-                        config
-                )
-        );
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier("c1", null, null),
+                    new TenantConfig(
+                            new TenantIdentifier("c1", null, "t1"),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            null, null, config
+                    )
+            );
 
-        Multitenancy.addNewOrUpdateAppOrTenant(
-                process.getProcess(),
-                new TenantIdentifier("c1", null, null),
-                new TenantConfig(
-                        new TenantIdentifier("c1", "a1", null),
-                        new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, null),
-                        new PasswordlessConfig(true),
-                        config
-                )
-        );
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier("c1", null, null),
+                    new TenantConfig(
+                            new TenantIdentifier("c1", "a1", null),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            null, null, config
+                    )
+            );
 
-        Multitenancy.addNewOrUpdateAppOrTenant(
-                process.getProcess(),
-                new TenantIdentifier("c1", "a1", null),
-                new TenantConfig(
-                        new TenantIdentifier("c1", "a1", "t1"),
-                        new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, null),
-                        new PasswordlessConfig(true),
-                        config
-                )
-        );
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier("c1", "a1", null),
+                    new TenantConfig(
+                            new TenantIdentifier("c1", "a1", "t1"),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            null, null, config
+                    )
+            );
 
-        Multitenancy.addNewOrUpdateAppOrTenant(
-                process.getProcess(),
-                new TenantIdentifier("c1", null, null),
-                new TenantConfig(
-                        new TenantIdentifier("c1", "a2", null),
-                        new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, null),
-                        new PasswordlessConfig(true),
-                        config
-                )
-        );
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier("c1", null, null),
+                    new TenantConfig(
+                            new TenantIdentifier("c1", "a2", null),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            null, null, config
+                    )
+            );
 
-        Multitenancy.addNewOrUpdateAppOrTenant(
-                process.getProcess(),
-                new TenantIdentifier("c1", "a2", null),
-                new TenantConfig(
-                        new TenantIdentifier("c1", "a2", "t1"),
-                        new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, null),
-                        new PasswordlessConfig(true),
-                        config
-                )
-        );
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier("c1", "a2", null),
+                    new TenantConfig(
+                            new TenantIdentifier("c1", "a2", "t1"),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            null, null, config
+                    )
+            );
 
-        Multitenancy.addNewOrUpdateAppOrTenant(
-                process.getProcess(),
-                new TenantIdentifier("c1", "a2", null),
-                new TenantConfig(
-                        new TenantIdentifier("c1", "a2", "t2"),
-                        new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, null),
-                        new PasswordlessConfig(true),
-                        config
-                )
-        );
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier("c1", "a2", null),
+                    new TenantConfig(
+                            new TenantIdentifier("c1", "a2", "t2"),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            null, null, config
+                    )
+            );
+        }
 
         TenantConfig[] allTenants = Multitenancy.getAllTenants(process.getProcess());
-        assertEquals(14, allTenants.length);
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            assertEquals(7, allTenants.length);
+        } else {
+            assertEquals(14, allTenants.length);
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -618,6 +668,10 @@ public class ConfigTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         JsonObject config = new JsonObject();
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                 .modifyConfigToAddANewUserPoolForTesting(config, 2);
@@ -631,7 +685,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            null, null, config
                     )
             );
             fail();
@@ -648,7 +702,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            null, null, config
                     )
             );
 
@@ -660,12 +714,12 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            null, null, config
                     )
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the public tenantId and, public or same appId to add/update an app", e.getMessage());
+            assertEquals("You must use the public or same app to add/update an app", e.getMessage());
         }
 
         try {
@@ -677,7 +731,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            null, null, config
                     )
             );
 
@@ -689,12 +743,12 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            null, null, config
                     )
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the public or same tenantId to add/update a tenant", e.getMessage());
+            assertEquals("You must use the public or same tenant to add/update a tenant", e.getMessage());
         }
 
         try {
@@ -706,12 +760,12 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            null, null, config
                     )
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the public or same tenantId to add/update a tenant", e.getMessage());
+            assertEquals("You must use the public or same tenant to add/update a tenant", e.getMessage());
         }
 
         try {
@@ -723,7 +777,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            null, null, config
                     )
             );
             fail();
@@ -740,7 +794,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            null, null, config
                     )
             );
             fail();
@@ -757,12 +811,12 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            null, null, config
                     )
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the public or same tenantId to add/update a tenant", e.getMessage());
+            assertEquals("You must use the public or same tenant to add/update a tenant", e.getMessage());
         }
 
         try {
@@ -774,12 +828,12 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            null, null, config
                     )
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the public tenantId and, public or same appId to add/update an app", e.getMessage());
+            assertEquals("You must use the public or same app to add/update an app", e.getMessage());
         }
 
         try {
@@ -791,12 +845,12 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            null, null, config
                     )
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the public or same tenantId to add/update a tenant", e.getMessage());
+            assertEquals("You must use the public or same tenant to add/update a tenant", e.getMessage());
         }
 
         try {
@@ -808,7 +862,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            null, null, config
                     )
             );
             fail();
@@ -825,7 +879,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            null, null, config
                     )
             );
             fail();
@@ -842,7 +896,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            null, null, config
                     )
             );
             fail();
@@ -870,6 +924,10 @@ public class ConfigTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
@@ -878,7 +936,7 @@ public class ConfigTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 )
         );
 
@@ -900,6 +958,10 @@ public class ConfigTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         { // Create an app with API key
             JsonObject coreConfig = new JsonObject();
             coreConfig.addProperty("api_keys", "asdfasdfasdfasdfasdf");
@@ -912,7 +974,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(false),
-                            coreConfig
+                            null, null, coreConfig
                     )
             );
         }
@@ -930,7 +992,7 @@ public class ConfigTest {
                                 new EmailPasswordConfig(true),
                                 new ThirdPartyConfig(true, null),
                                 new PasswordlessConfig(false),
-                                coreConfig
+                                null, null, coreConfig
                         )
                 );
                 fail();
@@ -948,7 +1010,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(false),
-                            new JsonObject()
+                            null, null, new JsonObject()
                     )
             );
 
@@ -963,7 +1025,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(false),
-                            coreConfig
+                            null, null, coreConfig
                     )
             );
         }
@@ -980,7 +1042,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(false),
-                            coreConfig
+                            null, null, coreConfig
                     )
             );
         }
@@ -1033,6 +1095,16 @@ public class ConfigTest {
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
+            if (StorageLayer.isInMemDb(process.getProcess())) {
+                if (!testCase[0].getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
+                    continue;
+                }
+            }
+
             for (int i = 0; i < testCase.length; i++) {
                 TenantIdentifier tenantIdentifier = testCase[i];
 
@@ -1046,7 +1118,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            coreConfigJson
+                            null, null, coreConfigJson
                     ), false);
 
                     CoreConfig coreConfig = Config.getConfig(tenantIdentifier, process.getProcess());
@@ -1066,7 +1138,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            coreConfigJson
+                            null, null, coreConfigJson
                     ), false);
 
                     CoreConfig coreConfig2 = Config.getConfig(tenantIdentifier, process.getProcess());
@@ -1090,6 +1162,10 @@ public class ConfigTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         { // create app without value
             JsonObject coreConfigJson = new JsonObject();
             StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
@@ -1100,7 +1176,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfigJson
+                    null, null, coreConfigJson
             ), false);
 
             CoreConfig coreConfig = Config.getConfig(tenantIdentifier, process.getProcess());
@@ -1118,7 +1194,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfigJson
+                    null, null, coreConfigJson
             ), false);
 
             CoreConfig coreConfig = Config.getConfig(tenantIdentifier, process.getProcess());
@@ -1141,6 +1217,14 @@ public class ConfigTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         { // create cud with value
             JsonObject coreConfigJson = new JsonObject();
             coreConfigJson.addProperty("email_verification_token_lifetime", 2000);
@@ -1152,7 +1236,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfigJson
+                    null, null, coreConfigJson
             ), false);
 
             CoreConfig coreConfig = Config.getConfig(tenantIdentifier, process.getProcess());
@@ -1170,7 +1254,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfigJson
+                    null, null, coreConfigJson
             ), false);
 
             CoreConfig coreConfig = Config.getConfig(tenantIdentifier, process.getProcess());
@@ -1188,7 +1272,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfigJson
+                    null, null, coreConfigJson
             ), false);
 
             CoreConfig coreConfig = Config.getConfig(tenantIdentifier, process.getProcess());
@@ -1209,6 +1293,10 @@ public class ConfigTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         try {
             JsonObject coreConfig = new JsonObject();
             coreConfig.addProperty("foo", "bar");
@@ -1217,7 +1305,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    null, null, coreConfig
             ), false);
             fail();
         } catch (InvalidConfigException e) {
@@ -1237,6 +1325,10 @@ public class ConfigTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         TenantIdentifier t1 = new TenantIdentifier(null, null, "t1");
 
         {
@@ -1246,7 +1338,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    null, null, coreConfig
             ), false);
         }
 
@@ -1261,7 +1353,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    null, null, coreConfig
             ), false);
 
             assertNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.TENANTS_CHANGED_DURING_REFRESH_FROM_DB));
@@ -1281,7 +1373,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    null, null, coreConfig
             ), false);
 
             Config configAfter = Config.getInstance(t1, process.getProcess());
@@ -1302,6 +1394,10 @@ public class ConfigTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         TenantIdentifier a1 = new TenantIdentifier(null, "a1", null);
         TenantIdentifier t1 = new TenantIdentifier(null, "a1", "t1");
 
@@ -1312,14 +1408,14 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    null, null, coreConfig
             ), false);
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     t1,
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    null, null, coreConfig
             ), false);
         }
 
@@ -1334,14 +1430,14 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    null, null, coreConfig
             ), false);Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 t1,
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                coreConfig
-            ), false);
+                null, null, coreConfig
+        ), false);
 
             assertNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.TENANTS_CHANGED_DURING_REFRESH_FROM_DB));
 
@@ -1360,7 +1456,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    null, null, coreConfig
             ), false);
 
             Config configAfter = Config.getInstance(t1, process.getProcess());
@@ -1381,6 +1477,10 @@ public class ConfigTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         TenantIdentifier t1 = new TenantIdentifier(null, null, "t1");
 
         {
@@ -1390,7 +1490,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    null, null, coreConfig
             ), false);
         }
 
@@ -1404,7 +1504,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    null, null, coreConfig
             ), false);
 
             assertNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.TENANTS_CHANGED_DURING_REFRESH_FROM_DB));
@@ -1423,7 +1523,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    null, null, coreConfig
             ), false);
 
             Storage storageLayerAfter = StorageLayer.getStorage(t1, process.getProcess());
@@ -1431,7 +1531,7 @@ public class ConfigTest {
             assertEquals(storageLayerBefore, storageLayerAfter);
         }
 
-        {
+        if (!StorageLayer.isInMemDb(process.getProcess())) {
             Storage storageLayerBefore = StorageLayer.getStorage(t1, process.getProcess());
 
             JsonObject coreConfig = new JsonObject();
@@ -1443,7 +1543,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    null, null, coreConfig
             ), false);
 
             Storage storageLayerAfter = StorageLayer.getStorage(t1, process.getProcess());
@@ -1464,6 +1564,10 @@ public class ConfigTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         AppIdentifier t1 = new AppIdentifier(null, "a1");
 
         {
@@ -1473,7 +1577,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    null, null, coreConfig
             ), false);
         }
 
@@ -1488,7 +1592,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    null, null, coreConfig
             ), false);
 
             assertNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.TENANTS_CHANGED_DURING_REFRESH_FROM_DB));
@@ -1507,7 +1611,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    null, null, coreConfig
             ), false);
 
             FeatureFlag featureFlagAfter = FeatureFlag.getInstance(process.getProcess(), t1);
@@ -1528,6 +1632,10 @@ public class ConfigTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         AppIdentifier t1 = new AppIdentifier(null, "a1");
 
         {
@@ -1537,7 +1645,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    null, null, coreConfig
             ), false);
         }
 
@@ -1555,7 +1663,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    null, null, coreConfig
             ), false);
 
             assertNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.TENANTS_CHANGED_DURING_REFRESH_FROM_DB));
@@ -1584,7 +1692,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    null, null, coreConfig
             ), false);
 
             AccessTokenSigningKey accessTokenSigningKeyAfter = AccessTokenSigningKey.getInstance(t1, process.getProcess());
@@ -1602,4 +1710,365 @@ public class ConfigTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
+    public void testLoadAllTenantConfigWithDifferentConfigSavedInTheDb() throws Exception {
+        // What is saved in db is not overwritten
+        // New apps/tenants are added to the loaded config
+
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // Save in db
+        JsonObject config = new JsonObject();
+        config.addProperty("email_verification_token_lifetime", 100);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, "a1", null),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                null, null, config
+        ), false);
+
+        // Now load a new set of configs
+        JsonObject config1 = new JsonObject();
+        config1.addProperty("email_verification_token_lifetime", 200);
+        JsonObject config2 = new JsonObject();
+        config2.addProperty("email_verification_token_lifetime", 300);
+        JsonObject config3 = new JsonObject();
+        config3.addProperty("email_verification_token_lifetime", 400);
+        JsonObject config4 = new JsonObject();
+        config4.addProperty("email_verification_token_lifetime", 500);
+
+        TenantConfig[] tenantConfigs = new TenantConfig[]{
+                new TenantConfig(
+                        new TenantIdentifier(null, null, null),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(false, null),
+                        new PasswordlessConfig(true),
+                        null, null, config1
+                ),
+                new TenantConfig(
+                        new TenantIdentifier(null, "a2", null),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(false, null),
+                        new PasswordlessConfig(true),
+                        null, null, config2
+                ),
+                new TenantConfig(
+                        new TenantIdentifier(null, "a2", "t1"),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        null, null, config3
+                ),
+                new TenantConfig(
+                        new TenantIdentifier(null, "a1", null),
+                        new EmailPasswordConfig(false),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        null, null, config4
+                ),
+        };
+        Config.loadAllTenantConfig(process.getProcess(), tenantConfigs);
+
+        assertEquals(
+                300,
+                Config.getConfig(new TenantIdentifier(null, "a2", null), process.getProcess()).getEmailVerificationTokenLifetime()
+        );
+        assertEquals(
+                400,
+                Config.getConfig(new TenantIdentifier(null, "a2", "t1"), process.getProcess()).getEmailVerificationTokenLifetime()
+        );
+        assertEquals(
+                100,
+                Config.getConfig(new TenantIdentifier(null, "a1", null), process.getProcess()).getEmailVerificationTokenLifetime()
+        );
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testThatMistypedConfigThrowsError() throws Exception {
+        String[] args = {"../"};
+
+        Utils.setValueInConfig("email_verification_token_lifetime", "144001");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject mistypedConfig = new JsonObject();
+        mistypedConfig.addProperty("foo", "bar");
+
+        try {
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    new TenantIdentifier(null, "a1", null),
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    null, null, mistypedConfig
+            ), false);
+            fail();
+        } catch (InvalidConfigException e) {
+            assertTrue(e.getMessage().contains("Invalid config key: foo"));
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testCoreSpecificConfigIsNotAllowedForNewTenants() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String[] disallowedConfigs = new String[]{
+                "port",
+                "host",
+                "info_log_path",
+                "error_log_path",
+                "max_server_pool_size",
+                "base_path",
+                "argon2_hashing_pool_size",
+                "log_level",
+                "firebase_password_hashing_pool_size",
+                "supertokens_saas_secret",
+                "supertokens_max_cdi_version"
+        };
+
+        for (String disallowedConfig : disallowedConfigs) {
+            JsonObject config = new JsonObject();
+            if (disallowedConfig.contains("size") || disallowedConfig.contains("port")) {
+                config.addProperty(disallowedConfig, 1000);
+            } else {
+                config.addProperty(disallowedConfig, "somevalue");
+            }
+
+            try {
+                Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                        new TenantIdentifier(null, "a1", null),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        null, null, config
+                ), false);
+                fail();
+            } catch (InvalidConfigException e) {
+                assertTrue(e.getMessage().contains(disallowedConfig));
+            }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testAllConflictingConfigs() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String[] disallowed = new String[]{
+                "port",
+                "host",
+                "info_log_path",
+                "error_log_path",
+                "max_server_pool_size",
+                "base_path",
+                "argon2_hashing_pool_size",
+                "log_level",
+                "firebase_password_hashing_pool_size",
+                "supertokens_saas_secret",
+                "argon2_iterations",
+                "argon2_memory_kb",
+                "argon2_parallelism",
+                "bcrypt_log_rounds",
+        };
+        Object[] disallowedValues = new Object[]{
+                3567, // port
+                "localhost", // host
+                "info.log", // info_log_path
+                "error.log", // error_log_path
+                15, // max_server_pool_size
+                "/new-base", // base_path
+                12, // argon2_hashing_pool_size
+                "DEBUG", // log_level
+                12, // firebase_password_hashing_pool_size
+                "abcd1234abcd1234", // supertokens_saas_secret
+                1, // argon2_iterations
+                87795, // argon2_memory_kb
+                2, // argon2_parallelism
+                11, // bcrypt_log_rounds
+        };
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+        for (int i=0; i<disallowed.length; i++) {
+            process = TestingProcessManager.start(args, false);
+            FeatureFlagTestContent.getInstance(process.getProcess())
+                    .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+            process.startProcess();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            JsonObject config = new JsonObject();
+            String property = disallowed[i];
+            Object value = disallowedValues[i];
+
+            if (value instanceof Integer) {
+                config.addProperty(disallowed[i], (Integer) disallowedValues[i]);
+            } else if (value instanceof String) {
+                config.addProperty(disallowed[i], (String) disallowedValues[i]);
+            } else if (value instanceof Boolean) {
+                config.addProperty(disallowed[i], (Boolean) disallowedValues[i]);
+            } else {
+                throw new Exception("Unknown type");
+            }
+
+            try {
+                Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                        new TenantIdentifier(null, "a1", null),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        null, null, config
+                ), false);
+                fail();
+            } catch (InvalidConfigException e) {
+                assertTrue(e.getMessage().contains(property));
+            }
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+
+        String[] conflictingInSameUserPool = new String[]{
+                "access_token_validity",
+                "access_token_blacklisting",
+                "refresh_token_validity",
+                "access_token_signing_key_dynamic",
+                "access_token_dynamic_signing_key_update_interval",
+                "api_keys",
+                "disable_telemetry",
+                "password_hashing_alg",
+                "firebase_password_hashing_signer_key",
+                "supertokens_max_cdi_version",
+        };
+        Object[][] conflictingValues = new Object[][]{
+                new Object[]{3600, 3601}, // access_token_validity
+                new Object[]{true, false}, // access_token_blacklisting
+                new Object[]{60 * 2400, 61 * 2400}, // refresh_token_validity
+                new Object[]{true, false}, // access_token_signing_key_dynamic
+                new Object[]{168, 169}, // access_token_dynamic_signing_key_update_interval
+                new Object[]{"abcd1234abcd1234abcd1234abcd1234", "qwer1234qwer1234qwer1234qwer1234"}, // api_keys
+                new Object[]{true, false}, // disable_telemetry
+                new Object[]{"BCRYPT", "ARGON2"}, // password_hashing_alg
+                new Object[]{"abcd1234abcd1234abcd1234abcd1234", "qwer1234qwer1234qwer1234qwer1234"}, // firebase_password_hashing_signer_key
+                new Object[]{"2.21", "3.0"} // supertokens_max_cdi_version
+        };
+
+        for (int i=0; i<conflictingInSameUserPool.length; i++) {
+            process = TestingProcessManager.start(args, false);
+            FeatureFlagTestContent.getInstance(process.getProcess())
+                    .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+            process.startProcess();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            JsonObject config = new JsonObject();
+            String property = conflictingInSameUserPool[i];
+            Object[] values = conflictingValues[i];
+
+
+            if (values[0] instanceof Integer) {
+                config.addProperty(conflictingInSameUserPool[i], (Integer) values[0]);
+            } else if (values[0] instanceof String) {
+                config.addProperty(conflictingInSameUserPool[i], (String) values[0]);
+            } else if (values[0] instanceof Boolean) {
+                config.addProperty(conflictingInSameUserPool[i], (Boolean) values[0]);
+            } else {
+                throw new Exception("Unknown type");
+            }
+
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    new TenantIdentifier(null, "a1", null),
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    null, null, config
+            ), false);
+
+            JsonObject config2 = new JsonObject();
+
+            if (values[1] instanceof Integer) {
+                config2.addProperty(conflictingInSameUserPool[i], (Integer) values[1]);
+            } else if (values[1] instanceof String) {
+                config2.addProperty(conflictingInSameUserPool[i], (String) values[1]);
+            } else if (values[1] instanceof Boolean) {
+                config2.addProperty(conflictingInSameUserPool[i], (Boolean) values[1]);
+            } else {
+                throw new Exception("Unknown type");
+            }
+
+            try {
+                Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                        new TenantIdentifier(null, "a1", "t1"),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        null, null, config2
+                ), false);
+                fail();
+            } catch (InvalidConfigException e) {
+                assertTrue(e.getMessage().contains(property));
+                assertTrue(e.getMessage().contains("same appId"));
+            }
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
+    public void testAllConfigFieldsAreAnnotated() throws Exception {
+        for (Field field : CoreConfig.class.getDeclaredFields()) {
+            if (field.isAnnotationPresent(IgnoreForAnnotationCheck.class)) {
+                continue;
+            }
+
+            if (!(field.isAnnotationPresent(ConfigYamlOnly.class) || field.isAnnotationPresent(NotConflictingInApp.class))) {
+                fail(field.getName() + " does not have ConfigYamlOnly or NotConflictingInApp annotation");
+            }
+        }
+    }
 }

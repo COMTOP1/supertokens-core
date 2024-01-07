@@ -80,6 +80,10 @@ public class MultitenantAPITest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants();
     }
 
@@ -105,6 +109,7 @@ public class MultitenantAPITest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
+                            null, null,
                             config
                     )
             );
@@ -125,6 +130,7 @@ public class MultitenantAPITest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
+                            null, null,
                             config
                     )
             );
@@ -145,6 +151,7 @@ public class MultitenantAPITest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
+                            null, null,
                             config
                     )
             );

@@ -48,8 +48,8 @@ core_config_version: 0
 # password_reset_token_lifetime:
 
 
-# (DIFFERENT_ACROSS_TENANTS | OPTIONAL | Default: 1 day) long value. Time in milliseconds for how long an email
-# verification token / link is valid for.
+# (DIFFERENT_ACROSS_TENANTS | OPTIONAL | Default: 86400000 (1 day)) long value. Time in milliseconds for how long an 
+# email verification token / link is valid for.
 # email_verification_token_lifetime:
 
 
@@ -103,16 +103,16 @@ core_config_version: 0
 # "BCRYPT"
 # password_hashing_alg:
 
-# (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: 11). Number of rounds to set for bcrypt password hashing
+# (OPTIONAL | Default: 11). Number of rounds to set for bcrypt password hashing
 # bcrypt_log_rounds:
 
-# (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: 1). Number of iterations for argon2 password hashing
+# (OPTIONAL | Default: 1). Number of iterations for argon2 password hashing
 # argon2_iterations:
 
-# (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: 87795 (85 mb)). Amount of memory in kb for argon2 password hashing
+# (OPTIONAL | Default: 87795 (85 mb)). Amount of memory in kb for argon2 password hashing
 # argon2_memory_kb:
 
-# (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: 2). Amount of parallelism for argon2 password hashing
+# (OPTIONAL | Default: 2). Amount of parallelism for argon2 password hashing
 # argon2_parallelism:
 
 # (OPTIONAL | Default: 1). Number of concurrent argon2 hashes that can happen at the same time for sign up or sign
@@ -141,3 +141,8 @@ core_config_version: 0
 # what database information is shown to / modifiable by the dev when they query the core to get the information about
 #  their tenants. It only exposes that information when this key is used instead of the regular api_keys config.
 # supertokens_saas_secret:
+
+# (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: null). This is used when the core needs to assume a specific CDI version
+# when CDI version is not specified in the request. When set to null, the core will assume the latest version of the
+# CDI.
+# supertokens_max_cdi_version:

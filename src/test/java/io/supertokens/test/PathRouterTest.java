@@ -27,6 +27,7 @@ import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
@@ -39,6 +40,7 @@ import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.webserver.RecipeRouter;
 import io.supertokens.webserver.Webserver;
 import io.supertokens.webserver.WebserverAPI;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.AfterClass;
@@ -78,6 +80,10 @@ public class PathRouterTest extends Mockito {
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantConfig(
@@ -85,7 +91,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -96,7 +102,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -107,7 +113,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -130,7 +136,8 @@ public class PathRouterTest extends Mockito {
                 }
 
                 @Override
-                protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                        throws IOException, ServletException {
                     super.sendTextResponse(200,
                             this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
                                     this.getTenantIdentifierFromRequest(req).getTenantId(), resp);
@@ -185,12 +192,6 @@ public class PathRouterTest extends Mockito {
                     "http://localhost:3567/t1/t1/t1", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(), "");
             assertEquals(",t1", response);
-        }
-        {
-            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/Hello/t1/t1", new HashMap<>(), 1000, 1000, null,
-                    Utils.getCdiVersionStringLatestForTests(), "");
-            assertEquals(",hello", response);
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -251,6 +252,10 @@ public class PathRouterTest extends Mockito {
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantConfig(
@@ -258,7 +263,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -269,7 +274,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -280,7 +285,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -302,7 +307,8 @@ public class PathRouterTest extends Mockito {
                 }
 
                 @Override
-                protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                        throws IOException, ServletException {
                     super.sendTextResponse(200,
                             this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
                                     this.getTenantIdentifierFromRequest(req).getTenantId(), resp);
@@ -357,12 +363,6 @@ public class PathRouterTest extends Mockito {
                     "http://localhost:3567/t1/t1/t1?a=b&c=d", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(), "");
             assertEquals(",t1", response);
-        }
-        {
-            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/Hello/t1/t1?a=b&c=d", new HashMap<>(), 1000, 1000, null,
-                    Utils.getCdiVersionStringLatestForTests(), "");
-            assertEquals(",hello", response);
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -424,6 +424,10 @@ public class PathRouterTest extends Mockito {
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantConfig(
@@ -431,7 +435,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -442,7 +446,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -453,7 +457,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -475,7 +479,8 @@ public class PathRouterTest extends Mockito {
                 }
 
                 @Override
-                protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                        throws IOException, ServletException {
                     super.sendTextResponse(200,
                             this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
                                     this.getTenantIdentifierFromRequest(req).getTenantId(), resp);
@@ -530,12 +535,6 @@ public class PathRouterTest extends Mockito {
                     "http://localhost:3567/base_path/t1/t1/t1", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(), "");
             assertEquals(",t1", response);
-        }
-        {
-            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/base_path/Hello/t1/t1", new HashMap<>(), 1000, 1000, null,
-                    Utils.getCdiVersionStringLatestForTests(), "");
-            assertEquals(",hello", response);
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -607,6 +606,10 @@ public class PathRouterTest extends Mockito {
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantConfig(
@@ -614,7 +617,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -625,7 +628,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -636,7 +639,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -659,7 +662,8 @@ public class PathRouterTest extends Mockito {
                 }
 
                 @Override
-                protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                        throws IOException, ServletException {
                     super.sendTextResponse(200,
                             this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
                                     this.getTenantIdentifierFromRequest(req).getTenantId(), resp);
@@ -714,12 +718,6 @@ public class PathRouterTest extends Mockito {
                     "http://localhost:3567/base/path/t1/t1/t1", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(), "");
             assertEquals(",t1", response);
-        }
-        {
-            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/base/path/Hello/t1/t1", new HashMap<>(), 1000, 1000, null,
-                    Utils.getCdiVersionStringLatestForTests(), "");
-            assertEquals(",hello", response);
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -791,6 +789,10 @@ public class PathRouterTest extends Mockito {
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantConfig(
@@ -798,7 +800,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -809,7 +811,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -820,7 +822,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -843,7 +845,8 @@ public class PathRouterTest extends Mockito {
                 }
 
                 @Override
-                protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                        throws IOException, ServletException {
                     super.sendTextResponse(200,
                             this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
                                     this.getTenantIdentifierFromRequest(req).getTenantId(), resp);
@@ -898,12 +901,6 @@ public class PathRouterTest extends Mockito {
                     "http://localhost:3567/t1/t1/t1/t1", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(), "");
             assertEquals(",t1", response);
-        }
-        {
-            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/t1/Hello/t1/t1", new HashMap<>(), 1000, 1000, null,
-                    Utils.getCdiVersionStringLatestForTests(), "");
-            assertEquals(",hello", response);
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -972,6 +969,10 @@ public class PathRouterTest extends Mockito {
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantConfig(
@@ -979,7 +980,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false);
         Multitenancy.addNewOrUpdateAppOrTenant(
@@ -989,7 +990,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false);
 
@@ -1009,7 +1010,8 @@ public class PathRouterTest extends Mockito {
                     }
 
                     @Override
-                    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                            throws IOException, ServletException {
                         super.sendTextResponse(200,
                                 this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
                                         this.getTenantIdentifierFromRequest(req).getTenantId() +
@@ -1031,7 +1033,8 @@ public class PathRouterTest extends Mockito {
                     }
 
                     @Override
-                    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                            throws IOException, ServletException {
                         super.sendTextResponse(200,
                                 this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
                                         this.getTenantIdentifierFromRequest(req).getTenantId() +
@@ -1055,7 +1058,8 @@ public class PathRouterTest extends Mockito {
             }
 
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException,
+                    ServletException {
                 super.sendTextResponse(200,
                         this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
                                 this.getTenantIdentifierFromRequest(req).getTenantId(), resp);
@@ -1124,7 +1128,8 @@ public class PathRouterTest extends Mockito {
                     }
 
                     @Override
-                    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                            throws IOException, ServletException {
                         super.sendTextResponse(200,
                                 this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
                                         this.getTenantIdentifierFromRequest(req).getTenantId() +
@@ -1149,7 +1154,8 @@ public class PathRouterTest extends Mockito {
                 }
 
                 @Override
-                protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                        throws IOException, ServletException {
                     super.sendTextResponse(200,
                             this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
                                     this.getTenantIdentifierFromRequest(req).getTenantId(), resp);
@@ -1187,7 +1193,8 @@ public class PathRouterTest extends Mockito {
                         }
 
                         @Override
-                        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                        protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                                throws IOException, ServletException {
                             super.sendTextResponse(200,
                                     this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
                                             this.getTenantIdentifierFromRequest(req).getTenantId() + ",",
@@ -1208,7 +1215,8 @@ public class PathRouterTest extends Mockito {
                         }
 
                         @Override
-                        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                        protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                                throws IOException, ServletException {
                             super.sendTextResponse(200,
                                     this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
                                             this.getTenantIdentifierFromRequest(req).getTenantId() + ",r1",
@@ -1237,7 +1245,8 @@ public class PathRouterTest extends Mockito {
                         }
 
                         @Override
-                        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                        protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                                throws IOException, ServletException {
                             super.sendTextResponse(200,
                                     this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
                                             this.getTenantIdentifierFromRequest(req).getTenantId() + ",",
@@ -1258,7 +1267,8 @@ public class PathRouterTest extends Mockito {
                         }
 
                         @Override
-                        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                        protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                                throws IOException, ServletException {
                             super.sendTextResponse(200,
                                     this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
                                             this.getTenantIdentifierFromRequest(req).getTenantId() + ",r1",
@@ -1290,6 +1300,14 @@ public class PathRouterTest extends Mockito {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         JsonObject tenantConfig = new JsonObject();
         tenantConfig.add("api_keys", new JsonPrimitive("abctijenbogweg=-2438243u98"));
         JsonObject tenant2Config = new JsonObject();
@@ -1301,34 +1319,34 @@ public class PathRouterTest extends Mockito {
 
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
-                new TenantConfig(new TenantIdentifier("localhost:3567", null, null), new EmailPasswordConfig(false),
+                new TenantConfig(new TenantIdentifier("localhost", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenantConfig),
+                        null, null, tenantConfig),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
-                new TenantConfig(new TenantIdentifier("localhost:3567", null, "t1"), new EmailPasswordConfig(false),
+                new TenantConfig(new TenantIdentifier("localhost", null, "t1"), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenantConfig),
+                        null, null, tenantConfig),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
-                new TenantConfig(new TenantIdentifier("127.0.0.1:3567", null, null), new EmailPasswordConfig(false),
+                new TenantConfig(new TenantIdentifier("127.0.0.1", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenant2Config),
+                        null, null, tenant2Config),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
-                new TenantConfig(new TenantIdentifier("127.0.0.1:3567", null, "t1"), new EmailPasswordConfig(false),
+                new TenantConfig(new TenantIdentifier("127.0.0.1", null, "t1"), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenant2Config),
+                        null, null, tenant2Config),
                 false
         );
 
@@ -1340,7 +1358,8 @@ public class PathRouterTest extends Mockito {
             }
 
             @Override
-            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException,
+                    ServletException {
                 super.sendTextResponse(200, super.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
                         this.getTenantIdentifierFromRequest(req).getTenantId(), resp);
             }
@@ -1351,7 +1370,7 @@ public class PathRouterTest extends Mockito {
                     "http://localhost:3567/test", new JsonObject(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(),
                     "abctijenbogweg=-2438243u98", "");
-            assertEquals("localhost:3567,public", response);
+            assertEquals("localhost,public", response);
         }
 
         {
@@ -1366,7 +1385,7 @@ public class PathRouterTest extends Mockito {
                 assertEquals(e.getMessage(),
                         "Http error. Status Code: 400. Message: AppId or tenantId not found => Tenant with the " +
                                 "following connectionURIDomain, appId and tenantId combination not found: (127.0.0" +
-                                ".1:3567, " +
+                                ".1, " +
                                 "public, t2)");
             }
         }
@@ -1375,7 +1394,7 @@ public class PathRouterTest extends Mockito {
                     "http://localhost:3567/t1/test", new JsonObject(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(),
                     "abctijenbogweg=-2438243u98", "");
-            assertEquals("localhost:3567,t1", response);
+            assertEquals("localhost,t1", response);
         }
 
         {
@@ -1383,7 +1402,7 @@ public class PathRouterTest extends Mockito {
                     "http://127.0.0.1:3567/t1/test", new JsonObject(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(),
                     "abcasdfaliojmo3jenbogweg=-9382923", "");
-            assertEquals("127.0.0.1:3567,t1", response);
+            assertEquals("127.0.0.1,t1", response);
         }
 
         process.kill();
@@ -1406,6 +1425,14 @@ public class PathRouterTest extends Mockito {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         JsonObject tenantConfig = new JsonObject();
         tenantConfig.add("api_keys", new JsonPrimitive("abctijenbogweg=-2438243u98"));
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
@@ -1413,18 +1440,18 @@ public class PathRouterTest extends Mockito {
 
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
-                new TenantConfig(new TenantIdentifier("localhost:3567", null, null), new EmailPasswordConfig(false),
+                new TenantConfig(new TenantIdentifier("localhost", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenantConfig),
+                        null, null, tenantConfig),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
-                new TenantConfig(new TenantIdentifier("localhost:3567", null, "t1"), new EmailPasswordConfig(false),
+                new TenantConfig(new TenantIdentifier("localhost", null, "t1"), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenantConfig),
+                        null, null, tenantConfig),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
@@ -1432,7 +1459,7 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(new TenantIdentifier(null, null, "t2"), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        new JsonObject()),
+                        null, null, new JsonObject()),
                 false
         );
 
@@ -1444,7 +1471,8 @@ public class PathRouterTest extends Mockito {
             }
 
             @Override
-            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException,
+                    ServletException {
                 super.sendTextResponse(200, super.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
                                 this.getTenantIdentifierFromRequest(req).getTenantId(),
                         resp);
@@ -1456,7 +1484,7 @@ public class PathRouterTest extends Mockito {
                     "http://localhost:3567/test", new JsonObject(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(),
                     "abctijenbogweg=-2438243u98", "");
-            assertEquals("localhost:3567,public", response);
+            assertEquals("localhost,public", response);
         }
 
         {
@@ -1471,7 +1499,7 @@ public class PathRouterTest extends Mockito {
                     "http://localhost:3567/t1/test", new JsonObject(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(),
                     "abctijenbogweg=-2438243u98", "");
-            assertEquals("localhost:3567,t1", response);
+            assertEquals("localhost,t1", response);
         }
 
         {
@@ -1515,20 +1543,28 @@ public class PathRouterTest extends Mockito {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         JsonObject tenantConfig = new JsonObject();
         tenantConfig.add("api_keys", new JsonPrimitive("abctijenbogweg=-2438243u98"));
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                 .modifyConfigToAddANewUserPoolForTesting(tenantConfig, 2);
 
         Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
-                new TenantConfig(new TenantIdentifier("localhost:3567", null, null), new EmailPasswordConfig(false),
+                new TenantConfig(new TenantIdentifier("localhost", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenantConfig),
-                new TenantConfig(new TenantIdentifier("localhost:3567", null, "t1"), new EmailPasswordConfig(false),
+                        null, null, tenantConfig),
+                new TenantConfig(new TenantIdentifier("localhost", null, "t1"), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenantConfig)}, new ArrayList<>());
+                        null, null, tenantConfig)}, new ArrayList<>());
 
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
 
@@ -1538,7 +1574,8 @@ public class PathRouterTest extends Mockito {
             }
 
             @Override
-            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException,
+                    ServletException {
                 super.sendTextResponse(200, super.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
                                 this.getTenantIdentifierFromRequest(req).getTenantId(),
                         resp);
@@ -1557,7 +1594,7 @@ public class PathRouterTest extends Mockito {
                 assertEquals(e.getMessage(),
                         "Http error. Status Code: 400. Message: AppId or tenantId not found => Tenant with the " +
                                 "following connectionURIDomain, appId and tenantId combination not found: " +
-                                "(localhost:3567, " +
+                                "(localhost, " +
                                 "public, t2)");
             }
         }
@@ -1575,6 +1612,10 @@ public class PathRouterTest extends Mockito {
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantConfig(
@@ -1582,7 +1623,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -1593,7 +1634,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -1604,7 +1645,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -1615,7 +1656,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -1626,7 +1667,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -1637,7 +1678,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -1648,7 +1689,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -1672,7 +1713,8 @@ public class PathRouterTest extends Mockito {
                 }
 
                 @Override
-                protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                        throws IOException, ServletException {
                     super.sendTextResponse(200,
                             this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
                                     this.getTenantIdentifierFromRequest(req).getAppId() + "," +
@@ -1779,12 +1821,6 @@ public class PathRouterTest extends Mockito {
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/Hello/t1/t1", new HashMap<>(), 1000, 1000, null,
-                    Utils.getCdiVersionStringLatestForTests(), "");
-            assertEquals(",public,hello", response);
-        }
-        {
-            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/public/t1/t1", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(), "");
             assertEquals(",public,public", response);
@@ -1877,6 +1913,10 @@ public class PathRouterTest extends Mockito {
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantConfig(
@@ -1884,7 +1924,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -1895,7 +1935,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -1906,7 +1946,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -1917,7 +1957,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -1928,7 +1968,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -1939,7 +1979,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -1950,7 +1990,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -1974,7 +2014,8 @@ public class PathRouterTest extends Mockito {
                 }
 
                 @Override
-                protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                        throws IOException, ServletException {
                     super.sendTextResponse(200,
                             this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
                                     this.getTenantIdentifierFromRequest(req).getAppId() + "," +
@@ -2060,12 +2101,6 @@ public class PathRouterTest extends Mockito {
                     "http://localhost:3567/base_path/t1/t1/t1", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(), "");
             assertEquals(",public,t1", response);
-        }
-        {
-            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/base_path/Hello/t1/t1", new HashMap<>(), 1000, 1000, null,
-                    Utils.getCdiVersionStringLatestForTests(), "");
-            assertEquals(",public,hello", response);
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -2163,6 +2198,10 @@ public class PathRouterTest extends Mockito {
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantConfig(
@@ -2170,7 +2209,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -2181,7 +2220,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -2192,7 +2231,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -2203,7 +2242,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -2214,7 +2253,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -2225,7 +2264,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -2236,7 +2275,7 @@ public class PathRouterTest extends Mockito {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ),
                 false
         );
@@ -2260,7 +2299,8 @@ public class PathRouterTest extends Mockito {
                 }
 
                 @Override
-                protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                        throws IOException, ServletException {
                     super.sendTextResponse(200,
                             this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
                                     this.getTenantIdentifierFromRequest(req).getAppId() + "," +
@@ -2346,12 +2386,6 @@ public class PathRouterTest extends Mockito {
                     "http://localhost:3567/appid-path/t1/t1/t1", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(), "");
             assertEquals(",public,t1", response);
-        }
-        {
-            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/appid-path/Hello/t1/t1", new HashMap<>(), 1000, 1000, null,
-                    Utils.getCdiVersionStringLatestForTests(), "");
-            assertEquals(",public,hello", response);
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -2455,6 +2489,14 @@ public class PathRouterTest extends Mockito {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         JsonObject tenantConfig = new JsonObject();
         tenantConfig.add("api_keys", new JsonPrimitive("abctijenbogweg=-2438243u98"));
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
@@ -2466,37 +2508,36 @@ public class PathRouterTest extends Mockito {
 
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
-                new TenantConfig(new TenantIdentifier("localhost:3567", null, null), new EmailPasswordConfig(false),
+                new TenantConfig(new TenantIdentifier("localhost", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenantConfig),
+                        null, null, tenantConfig),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
-                new TenantConfig(new TenantIdentifier("localhost:3567", "app1", "t1"), new EmailPasswordConfig(false),
+                new TenantConfig(new TenantIdentifier("localhost", "app1", null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenantConfig),
+                        null, null, tenantConfig),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
-                new TenantConfig(new TenantIdentifier("127.0.0.1:3567", null, null), new EmailPasswordConfig(false),
+                new TenantConfig(new TenantIdentifier("localhost", "app1", "t1"), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenant2Config),
+                        null, null, tenantConfig),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
-                new TenantConfig(new TenantIdentifier("127.0.0.1:3567", "app1", "t1"), new EmailPasswordConfig(false),
+                new TenantConfig(new TenantIdentifier("127.0.0.1", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenant2Config),
+                        null, null, tenant2Config),
                 false
         );
-
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
 
             @Override
@@ -2505,7 +2546,8 @@ public class PathRouterTest extends Mockito {
             }
 
             @Override
-            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException,
+                    ServletException {
                 super.sendTextResponse(200, super.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
                                 this.getTenantIdentifierFromRequest(req).getAppId() + "," +
                                 this.getTenantIdentifierFromRequest(req).getTenantId(),
@@ -2518,7 +2560,7 @@ public class PathRouterTest extends Mockito {
                     "http://localhost:3567/test", new JsonObject(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(),
                     "abctijenbogweg=-2438243u98", "");
-            assertEquals("localhost:3567,public,public", response);
+            assertEquals("localhost,public,public", response);
         }
 
         {
@@ -2533,16 +2575,34 @@ public class PathRouterTest extends Mockito {
                 assertEquals(e.getMessage(),
                         "Http error. Status Code: 400. Message: AppId or tenantId not found => Tenant with the " +
                                 "following connectionURIDomain, appId and tenantId combination not found: (127.0.0" +
-                                ".1:3567, " +
+                                ".1, " +
                                 "app1, public)");
             }
         }
+
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
+                new TenantConfig(new TenantIdentifier("127.0.0.1", "app1", null), new EmailPasswordConfig(false),
+                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new PasswordlessConfig(false),
+                        null, null, tenant2Config),
+                false
+        );
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
+                new TenantConfig(new TenantIdentifier("127.0.0.1", "app1", "t1"), new EmailPasswordConfig(false),
+                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new PasswordlessConfig(false),
+                        null, null, tenant2Config),
+                false
+        );
+
         {
             String response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/appid-app1/t1/test", new JsonObject(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(),
                     "abctijenbogweg=-2438243u98", "");
-            assertEquals("localhost:3567,app1,t1", response);
+            assertEquals("localhost,app1,t1", response);
         }
 
         {
@@ -2550,7 +2610,7 @@ public class PathRouterTest extends Mockito {
                     "http://127.0.0.1:3567/appid-app1/t1/test", new JsonObject(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(),
                     "abcasdfaliojmo3jenbogweg=-9382923", "");
-            assertEquals("127.0.0.1:3567,app1,t1", response);
+            assertEquals("127.0.0.1,app1,t1", response);
         }
 
         process.kill();
@@ -2573,6 +2633,14 @@ public class PathRouterTest extends Mockito {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         JsonObject tenantConfig = new JsonObject();
         tenantConfig.add("api_keys", new JsonPrimitive("abctijenbogweg=-2438243u98"));
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
@@ -2580,18 +2648,34 @@ public class PathRouterTest extends Mockito {
 
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
-                new TenantConfig(new TenantIdentifier("localhost:3567", null, null), new EmailPasswordConfig(false),
+                new TenantConfig(new TenantIdentifier("localhost", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenantConfig),
+                        null, null, tenantConfig),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
-                new TenantConfig(new TenantIdentifier("localhost:3567", "app1", "t1"), new EmailPasswordConfig(false),
+                new TenantConfig(new TenantIdentifier("localhost", "app1", null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenantConfig),
+                        null, null, tenantConfig),
+                false
+        );
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
+                new TenantConfig(new TenantIdentifier("localhost", "app1", "t1"), new EmailPasswordConfig(false),
+                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new PasswordlessConfig(false),
+                        null, null, tenantConfig),
+                false
+        );
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
+                new TenantConfig(new TenantIdentifier(null, "app2", null), new EmailPasswordConfig(false),
+                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new PasswordlessConfig(false),
+                        null, null, new JsonObject()),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
@@ -2599,7 +2683,7 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(new TenantIdentifier(null, "app2", "t2"), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        new JsonObject()),
+                        null, null, new JsonObject()),
                 false
         );
 
@@ -2611,7 +2695,8 @@ public class PathRouterTest extends Mockito {
             }
 
             @Override
-            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException,
+                    ServletException {
                 super.sendTextResponse(200, super.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
                                 this.getTenantIdentifierFromRequest(req).getAppId() + "," +
                                 this.getTenantIdentifierFromRequest(req).getTenantId(),
@@ -2624,7 +2709,7 @@ public class PathRouterTest extends Mockito {
                     "http://localhost:3567/test", new JsonObject(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(),
                     "abctijenbogweg=-2438243u98", "");
-            assertEquals("localhost:3567,public,public", response);
+            assertEquals("localhost,public,public", response);
         }
 
         {
@@ -2639,7 +2724,7 @@ public class PathRouterTest extends Mockito {
                     "http://localhost:3567/appid-app1/t1/test", new JsonObject(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(),
                     "abctijenbogweg=-2438243u98", "");
-            assertEquals("localhost:3567,app1,t1", response);
+            assertEquals("localhost,app1,t1", response);
         }
 
         {
@@ -2713,20 +2798,28 @@ public class PathRouterTest extends Mockito {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         JsonObject tenantConfig = new JsonObject();
         tenantConfig.add("api_keys", new JsonPrimitive("abctijenbogweg=-2438243u98"));
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                 .modifyConfigToAddANewUserPoolForTesting(tenantConfig, 2);
 
         Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
-                new TenantConfig(new TenantIdentifier("localhost:3567", null, null), new EmailPasswordConfig(false),
+                new TenantConfig(new TenantIdentifier("localhost", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenantConfig),
-                new TenantConfig(new TenantIdentifier("localhost:3567", "app1", "t1"), new EmailPasswordConfig(false),
+                        null, null, tenantConfig),
+                new TenantConfig(new TenantIdentifier("localhost", "app1", "t1"), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenantConfig)}, new ArrayList<>());
+                        null, null, tenantConfig)}, new ArrayList<>());
 
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
 
@@ -2736,7 +2829,8 @@ public class PathRouterTest extends Mockito {
             }
 
             @Override
-            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException,
+                    ServletException {
                 super.sendTextResponse(200, super.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
                                 this.getTenantIdentifierFromRequest(req).getAppId() + "," +
                                 this.getTenantIdentifierFromRequest(req).getTenantId(),
@@ -2756,7 +2850,7 @@ public class PathRouterTest extends Mockito {
                 assertEquals(e.getMessage(),
                         "Http error. Status Code: 400. Message: AppId or tenantId not found => Tenant with the " +
                                 "following connectionURIDomain, appId and tenantId combination not found: " +
-                                "(localhost:3567, " +
+                                "(localhost, " +
                                 "public, t2)");
             }
         }
@@ -2773,7 +2867,7 @@ public class PathRouterTest extends Mockito {
                 assertEquals(e.getMessage(),
                         "Http error. Status Code: 400. Message: AppId or tenantId not found => Tenant with the " +
                                 "following connectionURIDomain, appId and tenantId combination not found: " +
-                                "(localhost:3567, " +
+                                "(localhost, " +
                                 "app1, public)");
             }
         }

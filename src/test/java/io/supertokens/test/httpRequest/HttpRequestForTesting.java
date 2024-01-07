@@ -84,7 +84,7 @@ public class HttpRequestForTesting {
         try {
             con = (HttpURLConnection) obj.openConnection();
             con.setConnectTimeout(connectionTimeoutMS);
-            con.setReadTimeout(readTimeoutMS);
+            con.setReadTimeout(readTimeoutMS + 1000);
             if (version != null) {
                 con.setRequestProperty("api-version", version + "");
             }
@@ -129,7 +129,7 @@ public class HttpRequestForTesting {
     }
 
     @SuppressWarnings("unchecked")
-    private static <T> T sendJsonRequest(Main main, String requestID, String url, JsonElement requestBody,
+    public static <T> T sendJsonRequest(Main main, String requestID, String url, JsonElement requestBody,
             int connectionTimeoutMS, int readTimeoutMS, Integer version, String cdiVersion, String method,
             String apiKey, String rid) throws IOException, io.supertokens.test.httpRequest.HttpResponseException {
         URL obj = getURL(main, requestID, url);
@@ -139,7 +139,7 @@ public class HttpRequestForTesting {
             con = (HttpURLConnection) obj.openConnection();
             con.setRequestMethod(method);
             con.setConnectTimeout(connectionTimeoutMS);
-            con.setReadTimeout(readTimeoutMS);
+            con.setReadTimeout(readTimeoutMS + 1000);
             con.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
             if (version != null) {
                 con.setRequestProperty("api-version", version + "");
@@ -249,7 +249,7 @@ public class HttpRequestForTesting {
                     con = (HttpURLConnection) obj.openConnection();
                     con.setRequestMethod("DELETE");
                     con.setConnectTimeout(connectionTimeoutMS);
-                    con.setReadTimeout(readTimeoutMS);
+                    con.setReadTimeout(readTimeoutMS + 1000);
                     if (version != null) {
                         con.setRequestProperty("api-version", version + "");
                     }
@@ -300,6 +300,7 @@ public class HttpRequestForTesting {
         } else {
             sb.append("http://");
             sb.append(tenantIdentifier.getConnectionUriDomain());
+            sb.append(":3567");
         }
 
         if (!tenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {

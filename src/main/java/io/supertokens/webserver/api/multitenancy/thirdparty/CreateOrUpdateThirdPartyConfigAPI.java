@@ -58,8 +58,16 @@ public class CreateOrUpdateThirdPartyConfigAPI extends WebserverAPI {
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        String thirdPartyId = InputParser.parseStringOrThrowError(input, "thirdPartyId", false);
+
+        JsonObject config = InputParser.parseJsonObjectOrThrowError(input, "config", false);
+
+        String thirdPartyId = InputParser.parseStringOrThrowError(config, "thirdPartyId", false);
         thirdPartyId = thirdPartyId.trim();
+
+        Boolean skipValidation = InputParser.parseBooleanOrThrowError(input, "skipValidation", true);
+        if (skipValidation == null) {
+            skipValidation = false;
+        }
 
         try {
             TenantIdentifierWithStorage tenantIdentifier = this.getTenantIdentifierWithStorageFromRequest(req);
@@ -71,15 +79,15 @@ public class CreateOrUpdateThirdPartyConfigAPI extends WebserverAPI {
                 }
             }
 
-            TenantConfig config = Multitenancy.getTenantInfo(main, tenantIdentifier);
-            if (config == null) {
+            TenantConfig tenantConfig = Multitenancy.getTenantInfo(main, tenantIdentifier);
+            if (tenantConfig == null) {
                 throw new TenantOrAppNotFoundException(tenantIdentifier);
             }
             List<ThirdPartyConfig.Provider> newProviders = new ArrayList<>();
 
             boolean found = false;
 
-            for (ThirdPartyConfig.Provider provider: config.thirdPartyConfig.providers) {
+            for (ThirdPartyConfig.Provider provider : tenantConfig.thirdPartyConfig.providers) {
                 // Loop through all the existing thirdParty providers in the db
 
                 if (!provider.thirdPartyId.equals(thirdPartyId)) {
@@ -88,25 +96,29 @@ public class CreateOrUpdateThirdPartyConfigAPI extends WebserverAPI {
                 } else {
                     // if the thirdPartyId is the same as the one we are trying to update, add the one from json input
                     // to the new list
-                    ThirdPartyConfig.Provider newProvider = new Gson().fromJson(input, ThirdPartyConfig.Provider.class);
-                    newProviders.add(newProvider);
+                    ThirdPartyConfig.Provider newProvider = new Gson().fromJson(config,
+                            ThirdPartyConfig.Provider.class);
+                    newProviders.add(normalize(newProvider));
                     found = true;
                 }
             }
             if (!found) {
                 // if the thirdPartyId is not found in the db, add the one from json input to the new list
-                ThirdPartyConfig.Provider newProvider = new Gson().fromJson(input, ThirdPartyConfig.Provider.class);
-                newProviders.add(newProvider);
+                ThirdPartyConfig.Provider newProvider = new Gson().fromJson(config, ThirdPartyConfig.Provider.class);
+                newProviders.add(normalize(newProvider));
             }
             TenantConfig updatedConfig = new TenantConfig(
-                    config.tenantIdentifier,
-                    config.emailPasswordConfig,
+                    tenantConfig.tenantIdentifier,
+                    tenantConfig.emailPasswordConfig,
                     new ThirdPartyConfig(
-                            config.thirdPartyConfig.enabled, newProviders.toArray(new ThirdPartyConfig.Provider[0])),
-                    config.passwordlessConfig,
-                    config.coreConfig);
+                            tenantConfig.thirdPartyConfig.enabled,
+                            newProviders.toArray(new ThirdPartyConfig.Provider[0])),
+                    tenantConfig.passwordlessConfig,
+                    tenantConfig.firstFactors, tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
+            );
 
-            Multitenancy.addNewOrUpdateAppOrTenant(main, updatedConfig, shouldProtectDbConfig(req));
+            Multitenancy.addNewOrUpdateAppOrTenant(main, updatedConfig, shouldProtectProtectedConfig(req),
+                    skipValidation, true);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
@@ -121,5 +133,30 @@ public class CreateOrUpdateThirdPartyConfigAPI extends WebserverAPI {
         } catch (InvalidProviderConfigException e) {
             throw new ServletException(new BadRequestException("Invalid third party config: " + e.getMessage()));
         }
+    }
+
+    private ThirdPartyConfig.Provider normalize(ThirdPartyConfig.Provider provider) {
+        ThirdPartyConfig.UserInfoMap normalizedUserInfoMap = provider.userInfoMap;
+        if (normalizedUserInfoMap != null) {
+            normalizedUserInfoMap = new ThirdPartyConfig.UserInfoMap(normalizedUserInfoMap.fromIdTokenPayload,
+                    normalizedUserInfoMap.fromUserInfoAPI);
+        }
+
+        return new ThirdPartyConfig.Provider(
+                provider.thirdPartyId.trim(),
+                provider.name,
+                provider.clients,
+                provider.authorizationEndpoint,
+                provider.authorizationEndpointQueryParams,
+                provider.tokenEndpoint,
+                provider.tokenEndpointBodyParams,
+                provider.userInfoEndpoint,
+                provider.userInfoEndpointQueryParams,
+                provider.userInfoEndpointHeaders,
+                provider.jwksURI,
+                provider.oidcDiscoveryEndpoint,
+                provider.requireEmail,
+                normalizedUserInfoMap
+        );
     }
 }

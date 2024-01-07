@@ -19,6 +19,7 @@ package io.supertokens.test.multitenant.api;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
@@ -27,7 +28,8 @@ import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.ActiveUsersStorage;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
@@ -36,6 +38,8 @@ import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.nonAuthRecipe.NonAuthRecipeStorage;
 import io.supertokens.pluginInterface.usermetadata.UserMetadataStorage;
+import io.supertokens.session.Session;
+import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -123,44 +127,64 @@ public class TestTenantUserAssociation {
 
     @Test
     public void testUserAssociationWorksForEmailPasswordUser() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants();
-        JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com", "password", process.getProcess());
+        JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com",
+                "password", process.getProcess());
         String userId = user.get("id").getAsString();
 
-        JsonObject response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"), userId, process.getProcess());
+        JsonObject response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"),
+                userId, process.getProcess());
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         assertFalse(response.get("wasAlreadyAssociated").getAsBoolean());
 
-        response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"), userId, process.getProcess());
+        response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"), userId,
+                process.getProcess());
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         assertTrue(response.get("wasAlreadyAssociated").getAsBoolean());
     }
 
     @Test
     public void testUserDisassociationWorks() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants();
-        JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com", "password", process.getProcess());
+        JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com",
+                "password", process.getProcess());
         String userId = user.get("id").getAsString();
 
-        JsonObject response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"), userId, process.getProcess());
+        JsonObject response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"),
+                userId, process.getProcess());
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         assertFalse(response.get("wasAlreadyAssociated").getAsBoolean());
 
-        response = TestMultitenancyAPIHelper.disassociateUserFromTenant(new TenantIdentifier(null, "a1", "t2"), userId, process.getProcess());
+        response = TestMultitenancyAPIHelper.disassociateUserFromTenant(new TenantIdentifier(null, "a1", "t2"), userId,
+                process.getProcess());
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         assertTrue(response.get("wasAssociated").getAsBoolean());
 
-        response = TestMultitenancyAPIHelper.disassociateUserFromTenant(new TenantIdentifier(null, "a1", "t2"), userId, process.getProcess());
+        response = TestMultitenancyAPIHelper.disassociateUserFromTenant(new TenantIdentifier(null, "a1", "t2"), userId,
+                process.getProcess());
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         assertFalse(response.get("wasAssociated").getAsBoolean());
 
-        response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"), userId, process.getProcess());
+        response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"), userId,
+                process.getProcess());
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         assertFalse(response.get("wasAlreadyAssociated").getAsBoolean());
     }
 
     @Test
     public void testUserDisassociationForNotAuthRecipes() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants();
 
         Reflections reflections = new Reflections("io.supertokens.pluginInterface");
@@ -173,7 +197,9 @@ public class TestTenantUserAssociation {
             }
 
             if (name.equals(UserMetadataStorage.class.getName())
-                    || name.equals(JWTRecipeStorage.class.getName()) || name.equals(ActiveUsersStorage.class.getName())) {
+                    || name.equals(JWTRecipeStorage.class.getName())
+                    || name.equals(ActiveUsersStorage.class.getName())
+            ) {
                 // user metadata is app specific and does not have any tenant specific data
                 // JWT storage does not have any user specific data
                 // Active users storage does not have tenant specific data
@@ -190,7 +216,8 @@ public class TestTenantUserAssociation {
 
             StorageLayer.getStorage(t2, process.main).addInfoToNonAuthRecipesBasedOnUserId(t2, className, userId);
 
-            JsonObject response = TestMultitenancyAPIHelper.disassociateUserFromTenant(t2, userId, process.getProcess());
+            JsonObject response = TestMultitenancyAPIHelper.disassociateUserFromTenant(t2, userId,
+                    process.getProcess());
             assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
             assertTrue(response.get("wasAssociated").getAsBoolean());
         }
@@ -198,31 +225,52 @@ public class TestTenantUserAssociation {
 
     @Test
     public void testDisassociateFromAllTenantsAndThenAssociateWithATenantWorks() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants();
-        JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com", "password", process.getProcess());
+        JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com",
+                "password", process.getProcess());
         String userId = user.get("id").getAsString();
 
-        JsonObject response = TestMultitenancyAPIHelper.disassociateUserFromTenant(new TenantIdentifier(null, "a1", "t1"), userId, process.getProcess());
+        JsonObject response = TestMultitenancyAPIHelper.disassociateUserFromTenant(
+                new TenantIdentifier(null, "a1", "t1"), userId, process.getProcess());
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         assertTrue(response.get("wasAssociated").getAsBoolean());
 
-        response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"), userId, process.getProcess());
+        response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"), userId,
+                process.getProcess());
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         assertFalse(response.get("wasAlreadyAssociated").getAsBoolean());
     }
 
     @Test
     public void testAssociateOnDifferentStorageIsNotPossible() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         createTenants();
-        JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com", "password", process.getProcess());
+        JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com",
+                "password", process.getProcess());
         String userId = user.get("id").getAsString();
 
-        JsonObject response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", null), userId, process.getProcess());
+        JsonObject response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", null),
+                userId, process.getProcess());
         assertEquals("UNKNOWN_USER_ID_ERROR", response.get("status").getAsString());
     }
 
     @Test
     public void testEmailPasswordUsersHaveTenantIds() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants();
 
         TenantIdentifier t1 = new TenantIdentifier(null, "a1", "t1");
@@ -231,24 +279,29 @@ public class TestTenantUserAssociation {
         TenantIdentifierWithStorage t1WithStorage = t1.withStorage(StorageLayer.getStorage(t1, process.getProcess()));
         TenantIdentifierWithStorage t2WithStorage = t2.withStorage(StorageLayer.getStorage(t2, process.getProcess()));
 
-        UserInfo user = EmailPassword.signUp(t1WithStorage,
+        AuthRecipeUserInfo user = EmailPassword.signUp(t1WithStorage,
                 process.getProcess(), "user@example.com", "password");
-        assertArrayEquals(new String[]{"t1"}, user.tenantIds);
+        assertArrayEquals(new String[]{"t1"}, user.tenantIds.toArray());
 
-        Multitenancy.addUserIdToTenant(process.getProcess(), t2WithStorage, user.id);
-        user = EmailPassword.getUserUsingId(t1WithStorage.toAppIdentifierWithStorage(), user.id);
-        assertArrayEquals(new String[]{"t1", "t2"}, user.tenantIds);
+        Multitenancy.addUserIdToTenant(process.getProcess(), t2WithStorage, user.getSupertokensUserId());
+        user = EmailPassword.getUserUsingId(t1WithStorage.toAppIdentifierWithStorage(), user.getSupertokensUserId());
+        Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds.toArray());
 
-        user = EmailPassword.getUserUsingEmail(t1WithStorage, user.email);
-        assertArrayEquals(new String[]{"t1", "t2"}, user.tenantIds);
 
-        Multitenancy.removeUserIdFromTenant(process.getProcess(), t1WithStorage, user.id);
-        user = EmailPassword.getUserUsingId(t1WithStorage.toAppIdentifierWithStorage(), user.id);
-        assertArrayEquals(new String[]{"t2"}, user.tenantIds);
+        user = EmailPassword.getUserUsingEmail(t1WithStorage, user.loginMethods[0].email);
+        Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds.toArray());
+
+        Multitenancy.removeUserIdFromTenant(process.getProcess(), t1WithStorage, user.getSupertokensUserId(), null);
+        user = EmailPassword.getUserUsingId(t1WithStorage.toAppIdentifierWithStorage(), user.getSupertokensUserId());
+        assertArrayEquals(new String[]{"t2"}, user.tenantIds.toArray());
     }
 
     @Test
     public void testPasswordlessUsersHaveTenantIds1() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants();
 
         TenantIdentifier t1 = new TenantIdentifier(null, "a1", "t1");
@@ -259,25 +312,30 @@ public class TestTenantUserAssociation {
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(t1WithStorage,
                 process.getProcess(), "user@example.com", null, null, null);
-        Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(t1WithStorage, process.getProcess(),
+        Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(t1WithStorage,
+                process.getProcess(),
                 createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode, null);
-        assertArrayEquals(new String[]{"t1"}, consumeCodeResponse.user.tenantIds);
+        assertArrayEquals(new String[]{"t1"}, consumeCodeResponse.user.tenantIds.toArray());
 
-        io.supertokens.pluginInterface.passwordless.UserInfo user;
-        Multitenancy.addUserIdToTenant(process.getProcess(), t2WithStorage, consumeCodeResponse.user.id);
-        user = Passwordless.getUserById(t1WithStorage.toAppIdentifierWithStorage(), consumeCodeResponse.user.id);
-        assertArrayEquals(new String[]{"t1", "t2"}, user.tenantIds);
+        AuthRecipeUserInfo user;
+        Multitenancy.addUserIdToTenant(process.getProcess(), t2WithStorage, consumeCodeResponse.user.getSupertokensUserId());
+        user = Passwordless.getUserById(t1WithStorage.toAppIdentifierWithStorage(), consumeCodeResponse.user.getSupertokensUserId());
+        Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds.toArray());
 
-        user = Passwordless.getUserByEmail(t1WithStorage, consumeCodeResponse.user.email);
-        assertArrayEquals(new String[]{"t1", "t2"}, user.tenantIds);
+        user = Passwordless.getUserByEmail(t1WithStorage, consumeCodeResponse.user.loginMethods[0].email);
+        Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds.toArray());
 
-        Multitenancy.removeUserIdFromTenant(process.getProcess(), t1WithStorage, consumeCodeResponse.user.id);
-        user = Passwordless.getUserById(t1WithStorage.toAppIdentifierWithStorage(), consumeCodeResponse.user.id);
-        assertArrayEquals(new String[]{"t2"}, user.tenantIds);
+        Multitenancy.removeUserIdFromTenant(process.getProcess(), t1WithStorage, consumeCodeResponse.user.getSupertokensUserId(), null);
+        user = Passwordless.getUserById(t1WithStorage.toAppIdentifierWithStorage(), consumeCodeResponse.user.getSupertokensUserId());
+        assertArrayEquals(new String[]{"t2"}, user.tenantIds.toArray());
     }
 
     @Test
     public void testPasswordlessUsersHaveTenantIds2() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants();
 
         TenantIdentifier t1 = new TenantIdentifier(null, "a1", "t1");
@@ -288,25 +346,30 @@ public class TestTenantUserAssociation {
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(t1WithStorage,
                 process.getProcess(), null, "+919876543210", null, null);
-        Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(t1WithStorage, process.getProcess(),
+        Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(t1WithStorage,
+                process.getProcess(),
                 createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode, null);
-        assertArrayEquals(new String[]{"t1"}, consumeCodeResponse.user.tenantIds);
+        assertArrayEquals(new String[]{"t1"}, consumeCodeResponse.user.tenantIds.toArray());
 
-        io.supertokens.pluginInterface.passwordless.UserInfo user;
-        Multitenancy.addUserIdToTenant(process.getProcess(), t2WithStorage, consumeCodeResponse.user.id);
-        user = Passwordless.getUserById(t1WithStorage.toAppIdentifierWithStorage(), consumeCodeResponse.user.id);
-        assertArrayEquals(new String[]{"t1", "t2"}, user.tenantIds);
+        AuthRecipeUserInfo user;
+        Multitenancy.addUserIdToTenant(process.getProcess(), t2WithStorage, consumeCodeResponse.user.getSupertokensUserId());
+        user = Passwordless.getUserById(t1WithStorage.toAppIdentifierWithStorage(), consumeCodeResponse.user.getSupertokensUserId());
+        Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds.toArray());
 
-        user = Passwordless.getUserByPhoneNumber(t1WithStorage, consumeCodeResponse.user.phoneNumber);
-        assertArrayEquals(new String[]{"t1", "t2"}, user.tenantIds);
+        user = Passwordless.getUserByPhoneNumber(t1WithStorage, consumeCodeResponse.user.loginMethods[0].phoneNumber);
+        Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds.toArray());
 
-        Multitenancy.removeUserIdFromTenant(process.getProcess(), t1WithStorage, consumeCodeResponse.user.id);
-        user = Passwordless.getUserById(t1WithStorage.toAppIdentifierWithStorage(), consumeCodeResponse.user.id);
-        assertArrayEquals(new String[]{"t2"}, user.tenantIds);
+        Multitenancy.removeUserIdFromTenant(process.getProcess(), t1WithStorage, consumeCodeResponse.user.getSupertokensUserId(), null);
+        user = Passwordless.getUserById(t1WithStorage.toAppIdentifierWithStorage(), consumeCodeResponse.user.getSupertokensUserId());
+        assertArrayEquals(new String[]{"t2"}, user.tenantIds.toArray());
     }
 
     @Test
     public void testThirdPartyUsersHaveTenantIds() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants();
 
         TenantIdentifier t1 = new TenantIdentifier(null, "a1", "t1");
@@ -315,26 +378,200 @@ public class TestTenantUserAssociation {
         TenantIdentifierWithStorage t1WithStorage = t1.withStorage(StorageLayer.getStorage(t1, process.getProcess()));
         TenantIdentifierWithStorage t2WithStorage = t2.withStorage(StorageLayer.getStorage(t2, process.getProcess()));
 
-        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(t1WithStorage, process.getProcess(), "google",
+        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(t1WithStorage, process.getProcess(),
+                "google",
                 "googleid", "user@example.com");
-        assertArrayEquals(new String[]{"t1"}, signInUpResponse.user.tenantIds);
+        assertArrayEquals(new String[]{"t1"}, signInUpResponse.user.tenantIds.toArray());
 
-        Multitenancy.addUserIdToTenant(process.getProcess(), t2WithStorage, signInUpResponse.user.id);
-        io.supertokens.pluginInterface.thirdparty.UserInfo user = ThirdParty.getUser(
-                t1WithStorage.toAppIdentifierWithStorage(), signInUpResponse.user.id);
-        assertArrayEquals(new String[]{"t1", "t2"}, user.tenantIds);
+        Multitenancy.addUserIdToTenant(process.getProcess(), t2WithStorage, signInUpResponse.user.getSupertokensUserId());
+        AuthRecipeUserInfo user = ThirdParty.getUser(
+                t1WithStorage.toAppIdentifierWithStorage(), signInUpResponse.user.getSupertokensUserId());
+        Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds.toArray());
 
-        user = ThirdParty.getUsersByEmail(t1WithStorage, signInUpResponse.user.email)[0];
-        assertArrayEquals(new String[]{"t1", "t2"}, user.tenantIds);
+        user = ThirdParty.getUsersByEmail(t1WithStorage, signInUpResponse.user.loginMethods[0].email)[0];
+        Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds.toArray());
 
         user = ThirdParty.getUser(t1WithStorage, "google", "googleid");
-        assertArrayEquals(new String[]{"t1", "t2"}, user.tenantIds);
+        Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds.toArray());
 
         user = ThirdParty.getUser(t2WithStorage, "google", "googleid");
-        assertArrayEquals(new String[]{"t1", "t2"}, user.tenantIds);
+        Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds.toArray());
 
-        Multitenancy.removeUserIdFromTenant(process.getProcess(), t1WithStorage, signInUpResponse.user.id);
-        user = ThirdParty.getUser(t1WithStorage.toAppIdentifierWithStorage(), signInUpResponse.user.id);
-        assertArrayEquals(new String[]{"t2"}, user.tenantIds);
+        Multitenancy.removeUserIdFromTenant(process.getProcess(), t1WithStorage, signInUpResponse.user.getSupertokensUserId(), null);
+        user = ThirdParty.getUser(t1WithStorage.toAppIdentifierWithStorage(), signInUpResponse.user.getSupertokensUserId());
+        assertArrayEquals(new String[]{"t2"}, user.tenantIds.toArray());
+    }
+
+    @Test
+    public void testThatDisassociateUserFromWrongTenantDoesNotWork() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        createTenants();
+        JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com",
+                "password", process.getProcess());
+        String userId = user.get("id").getAsString();
+
+        JsonObject response = TestMultitenancyAPIHelper.disassociateUserFromTenant(
+                new TenantIdentifier(null, "a1", "t2"), userId, process.getProcess());
+        assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+        assertFalse(response.get("wasAssociated").getAsBoolean());
+    }
+
+    @Test
+    public void testThatDisassociateUserWithUseridMappingFromWrongTenantDoesNotWork() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        createTenants();
+        JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com",
+                "password", process.getProcess());
+        String userId = user.get("id").getAsString();
+
+        TestMultitenancyAPIHelper.createUserIdMapping(new TenantIdentifier(null, "a1", "t1"), userId, "externalid",
+                process.getProcess());
+
+        JsonObject response = TestMultitenancyAPIHelper.disassociateUserFromTenant(
+                new TenantIdentifier(null, "a1", "t2"), "externalid", process.getProcess());
+        assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+        assertFalse(response.get("wasAssociated").getAsBoolean());
+    }
+
+    @Test
+    public void testAssociateAndDisassociateWithUseridMapping() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        createTenants();
+        JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com",
+                "password", process.getProcess());
+        String userId = user.get("id").getAsString();
+
+        TestMultitenancyAPIHelper.createUserIdMapping(new TenantIdentifier(null, "a1", "t1"), userId, "externalid",
+                process.getProcess());
+
+        JsonObject response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"),
+                "externalid", process.getProcess());
+        assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+        assertFalse(response.get("wasAlreadyAssociated").getAsBoolean());
+
+        response = TestMultitenancyAPIHelper.disassociateUserFromTenant(new TenantIdentifier(null, "a1", "t2"),
+                "externalid", process.getProcess());
+        assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+        assertTrue(response.get("wasAssociated").getAsBoolean());
+
+    }
+
+    @Test
+    public void testDisassociateUserWithUserIdMappingAndSession() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        createTenants();
+        JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com",
+                "password", process.getProcess());
+        String userId = user.get("id").getAsString();
+
+        TestMultitenancyAPIHelper.createUserIdMapping(new TenantIdentifier(null, "a1", "t1"), userId, "externalid",
+                process.getProcess());
+
+        JsonObject response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"),
+                "externalid", process.getProcess());
+        assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+        assertFalse(response.get("wasAlreadyAssociated").getAsBoolean());
+
+        TenantIdentifier t2 = new TenantIdentifier(null, "a1", "t2");
+        TenantIdentifierWithStorage t2WithStorage = t2.withStorage(StorageLayer.getStorage(t2, process.getProcess()));
+
+        SessionInformationHolder session = Session.createNewSession(t2WithStorage,
+                process.getProcess(), "externalid", new JsonObject(), new JsonObject());
+
+        response = TestMultitenancyAPIHelper.disassociateUserFromTenant(new TenantIdentifier(null, "a1", "t2"),
+                "externalid", process.getProcess());
+        assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+        assertTrue(response.get("wasAssociated").getAsBoolean());
+
+        try {
+            Session.getSession(t2WithStorage, session.session.handle);
+            fail();
+        } catch (UnauthorisedException e) {
+            // OK
+        }
+    }
+
+    @Test
+    public void testThatUserWithSameEmailCannotBeAssociatedToATenantForEp() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        createTenants();
+        JsonObject user1 = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com",
+                "password", process.getProcess());
+        String userId1 = user1.get("id").getAsString();
+
+        TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t2"), "user@example.com",
+                "password", process.getProcess());
+
+        JsonObject response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"), userId1, process.getProcess());
+        assertEquals("EMAIL_ALREADY_EXISTS_ERROR", response.getAsJsonPrimitive("status").getAsString());
+    }
+
+    @Test
+    public void testThatUserWithSameThirdPartyInfoCannotBeAssociatedToATenantForTp() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        createTenants();
+        JsonObject user1 = TestMultitenancyAPIHelper.tpSignInUp(new TenantIdentifier(null, "a1", "t1"), "google", "google-user", "user@example.com",
+                process.getProcess());
+        String userId1 = user1.get("id").getAsString();
+
+        TestMultitenancyAPIHelper.tpSignInUp(new TenantIdentifier(null, "a1", "t2"), "google", "google-user", "user@example.com",
+                process.getProcess());
+
+        JsonObject response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"), userId1, process.getProcess());
+        assertEquals("THIRD_PARTY_USER_ALREADY_EXISTS_ERROR", response.getAsJsonPrimitive("status").getAsString());
+    }
+
+    @Test
+    public void testThatUserWithSameEmailCannotBeAssociatedToATenantForPless() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        createTenants();
+        JsonObject user1 = TestMultitenancyAPIHelper.plSignInUpEmail(new TenantIdentifier(null, "a1", "t1"), "user@example.com",
+                process.getProcess());
+        String userId1 = user1.get("id").getAsString();
+
+        TestMultitenancyAPIHelper.plSignInUpEmail(new TenantIdentifier(null, "a1", "t2"), "user@example.com",
+                process.getProcess());
+
+        JsonObject response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"), userId1, process.getProcess());
+        assertEquals("EMAIL_ALREADY_EXISTS_ERROR", response.getAsJsonPrimitive("status").getAsString());
+    }
+
+    @Test
+    public void testThatUserWithSamePhoneCannotBeAssociatedToATenantForPless() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        createTenants();
+        JsonObject user1 = TestMultitenancyAPIHelper.plSignInUpNumber(new TenantIdentifier(null, "a1", "t1"), "+919876543210",
+                process.getProcess());
+        String userId1 = user1.get("id").getAsString();
+
+        TestMultitenancyAPIHelper.plSignInUpNumber(new TenantIdentifier(null, "a1", "t2"), "+919876543210",
+                process.getProcess());
+
+        JsonObject response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"), userId1, process.getProcess());
+        assertEquals("PHONE_NUMBER_ALREADY_EXISTS_ERROR", response.getAsJsonPrimitive("status").getAsString());
     }
 }

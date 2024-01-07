@@ -26,6 +26,7 @@ import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
@@ -77,6 +78,10 @@ public class MultitenantAPITest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants();
     }
 
@@ -103,6 +108,7 @@ public class MultitenantAPITest {
                             new EmailPasswordConfig(false),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(false),
+                            null, null,
                             config
                     )
             );
@@ -123,6 +129,7 @@ public class MultitenantAPITest {
                             new EmailPasswordConfig(false),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(false),
+                            null, null,
                             config
                     )
             );
@@ -143,6 +150,7 @@ public class MultitenantAPITest {
                             new EmailPasswordConfig(false),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(false),
+                            null, null,
                             config
                     )
             );
@@ -166,7 +174,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signinup"), signUpRequestBody,
                 1000, 1000, null,
-                SemVer.v2_22.get(), "thirdparty");
+                SemVer.v3_0.get(), "thirdparty");
         assertEquals("OK", response.get("status").getAsString());
         assertEquals(3, response.entrySet().size());
 
@@ -179,7 +187,7 @@ public class MultitenantAPITest {
         map.put("userId", userId);
         JsonObject userResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user"),
-                map, 1000, 1000, null, SemVer.v2_22.get(),
+                map, 1000, 1000, null, SemVer.v3_0.get(),
                 "thirdparty");
         assertEquals("OK", userResponse.getAsJsonPrimitive("status").getAsString());
         return userResponse.getAsJsonObject("user");
@@ -192,7 +200,7 @@ public class MultitenantAPITest {
         map.put("thirdPartyUserId", thirdPartyUserId);
         JsonObject userResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user"),
-                map, 1000, 1000, null, SemVer.v2_22.get(),
+                map, 1000, 1000, null, SemVer.v3_0.get(),
                 "thirdparty");
         assertEquals("OK", userResponse.getAsJsonPrimitive("status").getAsString());
         return userResponse.getAsJsonObject("user");
@@ -204,7 +212,7 @@ public class MultitenantAPITest {
         map.put("email", email);
         JsonObject userResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/users/by-email"),
-                map, 1000, 1000, null, SemVer.v2_22.get(),
+                map, 1000, 1000, null, SemVer.v3_0.get(),
                 "thirdparty");
         assertEquals("OK", userResponse.getAsJsonPrimitive("status").getAsString());
 
@@ -221,6 +229,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testSameThirdPartyUserCanLoginAcrossTenants() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         JsonObject user1 = signInUp(t1, "google", "google-user-id", "user@gmail.com");
         JsonObject user2 = signInUp(t2, "google", "google-user-id", "user@gmail.com");
         JsonObject user3 = signInUp(t3, "google", "google-user-id", "user@gmail.com");
@@ -232,6 +244,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testGetUserUsingIdReturnsUserFromTheRightTenantWhileQueryingFromAnyTenantInTheSameApp() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         JsonObject user1 = signInUp(t1, "google", "google-user-id", "user@gmail.com");
         JsonObject user2 = signInUp(t2, "google", "google-user-id", "user@gmail.com");
         JsonObject user3 = signInUp(t3, "google", "google-user-id", "user@gmail.com");
@@ -245,6 +261,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testGetUserByThirdPartyIdReturnsTenantSpecificUser() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         JsonObject user1 = signInUp(t1, "google", "google-user-id", "user@gmail.com");
         JsonObject user2 = signInUp(t2, "google", "google-user-id", "user@gmail.com");
         JsonObject user3 = signInUp(t3, "google", "google-user-id", "user@gmail.com");
@@ -256,6 +276,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testGetUserByEmailReturnsTenantSpecificUser() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         JsonObject user1 = signInUp(t1, "google", "google-user-id", "user@gmail.com");
         JsonObject user2 = signInUp(t2, "google", "google-user-id", "user@gmail.com");
         JsonObject user3 = signInUp(t3, "google", "google-user-id", "user@gmail.com");

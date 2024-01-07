@@ -21,6 +21,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -71,6 +72,10 @@ public class TestLicenseBehaviour {
 
     @Test
     public void testAllowLicenseRemovalForCoreWithMultitenancy() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         TestMultitenancyAPIHelper.addLicense(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE, process.getProcess());
 
         JsonObject coreConfig = new JsonObject();
@@ -92,13 +97,20 @@ public class TestLicenseBehaviour {
         TestMultitenancyAPIHelper.removeLicense(process.getProcess());
 
         // Sign up and get user info
-        JsonObject userInfo = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com", "password", process.getProcess());
-        JsonObject userInfo2 = TestMultitenancyAPIHelper.getEpUserById(new TenantIdentifier(null, "a1", "t1"), userInfo.get("id").getAsString(), process.getProcess());
+        JsonObject userInfo = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"),
+                "user@example.com", "password", process.getProcess());
+        JsonObject userInfo2 = TestMultitenancyAPIHelper.getEpUserById(new TenantIdentifier(null, "a1", "t1"),
+                userInfo.get("id").getAsString(), process.getProcess());
         assertEquals(userInfo, userInfo2);
     }
 
     @Test
     public void testThatCreationOfNewTenantIsNotAllowedAfterLicenseRemoval() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL ||
+                StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         TestMultitenancyAPIHelper.addLicense(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE, process.getProcess());
 
         JsonObject coreConfig = new JsonObject();
@@ -127,12 +139,23 @@ public class TestLicenseBehaviour {
                     coreConfig);
             fail();
         } catch (HttpResponseException e) {
-            assertEquals("Http error. Status Code: 402. Message: Cannot use feature: multi_tenancy, because the license key is missing, or doesn't have this feature enabled.", e.getMessage());
+            assertEquals(
+                    "Http error. Status Code: 402. Message: Cannot use feature: multi_tenancy, because the license " +
+                            "key is missing, or doesn't have this feature enabled.",
+                    e.getMessage());
         }
     }
 
     @Test
     public void testThatCoreCanRestartWithAllTheTenantsWithoutLicenseKey() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         TestMultitenancyAPIHelper.addLicense(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE, process.getProcess());
 
         JsonObject coreConfig = new JsonObject();
@@ -179,12 +202,20 @@ public class TestLicenseBehaviour {
                     coreConfig);
             fail();
         } catch (HttpResponseException e) {
-            assertEquals("Http error. Status Code: 402. Message: Cannot use feature: multi_tenancy, because the license key is missing, or doesn't have this feature enabled.", e.getMessage());
+            assertEquals(
+                    "Http error. Status Code: 402. Message: Cannot use feature: multi_tenancy, because the license " +
+                            "key is missing, or doesn't have this feature enabled.",
+                    e.getMessage());
         }
     }
 
     @Test
     public void testThatAddingThirdPartyConfigIsNotAllowedAfterLicenseRemoval() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL ||
+                StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         TestMultitenancyAPIHelper.addLicense(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE, process.getProcess());
 
         JsonObject coreConfig = new JsonObject();
@@ -214,12 +245,20 @@ public class TestLicenseBehaviour {
                     process.getProcess());
             fail();
         } catch (HttpResponseException e) {
-            assertEquals("Http error. Status Code: 402. Message: Cannot use feature: multi_tenancy, because the license key is missing, or doesn't have this feature enabled.", e.getMessage());
+            assertEquals(
+                    "Http error. Status Code: 402. Message: Cannot use feature: multi_tenancy, because the license " +
+                            "key is missing, or doesn't have this feature enabled.",
+                    e.getMessage());
         }
     }
 
     @Test
     public void testThatAssociationOfUserWithAnotherTenantIsNotAllowedAfterLicenseRemoval() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL ||
+                StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         TestMultitenancyAPIHelper.addLicense(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE, process.getProcess());
 
         JsonObject coreConfig = new JsonObject();
@@ -246,18 +285,27 @@ public class TestLicenseBehaviour {
 
         TestMultitenancyAPIHelper.removeLicense(process.getProcess());
 
-        JsonObject userInfo = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com", "password", process.getProcess());
+        JsonObject userInfo = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"),
+                "user@example.com", "password", process.getProcess());
 
         try {
-            TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"), userInfo.get("id").getAsString(), process.getProcess());
+            TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"),
+                    userInfo.get("id").getAsString(), process.getProcess());
             fail();
         } catch (HttpResponseException e) {
-            assertEquals("Http error. Status Code: 402. Message: Cannot use feature: multi_tenancy, because the license key is missing, or doesn't have this feature enabled.", e.getMessage());
+            assertEquals(
+                    "Http error. Status Code: 402. Message: Cannot use feature: multi_tenancy, because the license " +
+                            "key is missing, or doesn't have this feature enabled.",
+                    e.getMessage());
         }
     }
 
     @Test
     public void testUpdationOfBaseTenantIsAllowedWithoutLicense() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         TestMultitenancyAPIHelper.addLicense(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE, process.getProcess());
 
         JsonObject coreConfig = new JsonObject();
@@ -279,7 +327,8 @@ public class TestLicenseBehaviour {
         TestMultitenancyAPIHelper.removeLicense(process.getProcess());
 
         JsonObject config = new JsonObject();
-        TestMultitenancyAPIHelper.createConnectionUriDomain(process.main, new TenantIdentifier(null, null, null), null, true, true, true, new JsonObject() );
+        TestMultitenancyAPIHelper.createConnectionUriDomain(process.main, new TenantIdentifier(null, null, null), null,
+                true, true, true, new JsonObject());
         TestMultitenancyAPIHelper.addOrUpdateThirdPartyProviderConfig(
                 new TenantIdentifier(null, null, null),
                 new ThirdPartyConfig.Provider(

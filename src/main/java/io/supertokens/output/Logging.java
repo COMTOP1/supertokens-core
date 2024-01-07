@@ -24,12 +24,13 @@ import ch.qos.logback.core.FileAppender;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.LOG_LEVEL;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
+import io.supertokens.version.Version;
 import io.supertokens.webserver.Webserver;
 import org.slf4j.LoggerFactory;
 
@@ -174,7 +175,8 @@ public class Logging extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static void error(Main main, TenantIdentifier tenantIdentifier, String message, boolean toConsoleAsWell, Exception e) {
+    public static void error(Main main, TenantIdentifier tenantIdentifier, String message, boolean toConsoleAsWell,
+                             Exception e) {
         try {
             if (!Config.getConfig(new TenantIdentifier(null, null, null), main).getLogLevels(main)
                     .contains(LOG_LEVEL.ERROR)) {
@@ -188,6 +190,7 @@ public class Logging extends ResourceDistributor.SingletonResource {
         try {
             String err = Utils.throwableStacktraceToString(e).trim();
             if (getInstance(main) != null) {
+                err = prependTenantIdentifierToMessage(tenantIdentifier, err);
                 getInstance(main).errorLogger.error(err);
             } else if (Main.isTesting) {
                 systemErr(err);
@@ -220,6 +223,10 @@ public class Logging extends ResourceDistributor.SingletonResource {
         if (getInstance(main) == null) {
             return;
         }
+        getInstance(main).infoLogger.getLoggerContext().stop();
+        getInstance(main).errorLogger.getLoggerContext().stop();
+        getInstance(main).infoLogger.getLoggerContext().getStatusManager().clear();
+        getInstance(main).errorLogger.getLoggerContext().getStatusManager().clear();
         getInstance(main).infoLogger.detachAndStopAllAppenders();
         getInstance(main).errorLogger.detachAndStopAllAppenders();
         Webserver.getInstance(main).closeLogger();
@@ -228,7 +235,7 @@ public class Logging extends ResourceDistributor.SingletonResource {
 
     private Logger createLoggerForFile(Main main, String file, String name) {
         LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
-        LayoutWrappingEncoder ple = new LayoutWrappingEncoder(main.getProcessId());
+        LayoutWrappingEncoder ple = new LayoutWrappingEncoder(main.getProcessId(), Version.getVersion(main).getCoreVersion());
         ple.setContext(lc);
         ple.start();
         FileAppender<ILoggingEvent> fileAppender = new FileAppender<>();
@@ -246,7 +253,7 @@ public class Logging extends ResourceDistributor.SingletonResource {
 
     private Logger createLoggerForConsole(Main main, String name) {
         LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
-        LayoutWrappingEncoder ple = new LayoutWrappingEncoder(main.getProcessId());
+        LayoutWrappingEncoder ple = new LayoutWrappingEncoder(main.getProcessId(), Version.getVersion(main).getCoreVersion());
         ple.setContext(lc);
         ple.start();
         ConsoleAppender<ILoggingEvent> logConsoleAppender = new ConsoleAppender<>();

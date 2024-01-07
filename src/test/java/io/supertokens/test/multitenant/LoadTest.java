@@ -56,7 +56,7 @@ public class LoadTest {
     }
 
     @Test
-    public void testCreating100StorageLayersUsage()
+    public void testCreating100TenantsAndCheckOnlyOneInstanceOfStorageLayerIsCreated()
             throws InterruptedException {
         String[] args = {"../"};
 
@@ -75,7 +75,7 @@ public class LoadTest {
                     new EmailPasswordConfig(false),
                     new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                     new PasswordlessConfig(false),
-                    config);
+                    null, null, config);
             try {
                 Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantIdentifier(null, null, null),
                         tenants[insideLoop]);

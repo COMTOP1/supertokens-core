@@ -19,6 +19,7 @@ package io.supertokens.test.emailpassword;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
@@ -26,8 +27,9 @@ import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
@@ -46,7 +48,8 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class MultitenantEmailPasswordTest {
     @AfterClass
@@ -81,6 +84,7 @@ public class MultitenantEmailPasswordTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(false, null),
                             new PasswordlessConfig(false),
+                            null, null,
                             config
                     )
             );
@@ -101,6 +105,7 @@ public class MultitenantEmailPasswordTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(false, null),
                             new PasswordlessConfig(false),
+                            null, null,
                             config
                     )
             );
@@ -121,6 +126,7 @@ public class MultitenantEmailPasswordTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(false, null),
                             new PasswordlessConfig(false),
+                            null, null,
                             config
                     )
             );
@@ -141,6 +147,10 @@ public class MultitenantEmailPasswordTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants(process);
 
         TenantIdentifier t1 = new TenantIdentifier(null, "a1", null);
@@ -152,20 +162,23 @@ public class MultitenantEmailPasswordTest {
 
         {
             EmailPassword.signUp(t1storage, process.getProcess(), "user1@example.com", "password1");
-            UserInfo userInfo = EmailPassword.signIn(t1storage, process.getProcess(), "user1@example.com", "password1");
-            assertEquals("user1@example.com", userInfo.email);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(t1storage, process.getProcess(), "user1@example.com",
+                    "password1");
+            assertEquals("user1@example.com", userInfo.loginMethods[0].email);
         }
 
         {
             EmailPassword.signUp(t2storage, process.getProcess(), "user2@example.com", "password2");
-            UserInfo userInfo = EmailPassword.signIn(t2storage, process.getProcess(), "user2@example.com", "password2");
-            assertEquals("user2@example.com", userInfo.email);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(t2storage, process.getProcess(), "user2@example.com",
+                    "password2");
+            assertEquals("user2@example.com", userInfo.loginMethods[0].email);
         }
 
         {
             EmailPassword.signUp(t3storage, process.getProcess(), "user3@example.com", "password3");
-            UserInfo userInfo = EmailPassword.signIn(t3storage, process.getProcess(), "user3@example.com", "password3");
-            assertEquals("user3@example.com", userInfo.email);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(t3storage, process.getProcess(), "user3@example.com",
+                    "password3");
+            assertEquals("user3@example.com", userInfo.loginMethods[0].email);
         }
 
         process.kill();
@@ -186,6 +199,10 @@ public class MultitenantEmailPasswordTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants(process);
 
         TenantIdentifier t1 = new TenantIdentifier(null, "a1", null);
@@ -201,18 +218,21 @@ public class MultitenantEmailPasswordTest {
         EmailPassword.signUp(t3storage, process.getProcess(), "user@example.com", "password3");
 
         {
-            UserInfo userInfo = EmailPassword.signIn(t1storage, process.getProcess(), "user@example.com", "password1");
-            assertEquals("user@example.com", userInfo.email);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(t1storage, process.getProcess(), "user@example.com",
+                    "password1");
+            assertEquals("user@example.com", userInfo.loginMethods[0].email);
         }
 
         {
-            UserInfo userInfo = EmailPassword.signIn(t2storage, process.getProcess(), "user@example.com", "password2");
-            assertEquals("user@example.com", userInfo.email);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(t2storage, process.getProcess(), "user@example.com",
+                    "password2");
+            assertEquals("user@example.com", userInfo.loginMethods[0].email);
         }
 
         {
-            UserInfo userInfo = EmailPassword.signIn(t3storage, process.getProcess(), "user@example.com", "password3");
-            assertEquals("user@example.com", userInfo.email);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(t3storage, process.getProcess(), "user@example.com",
+                    "password3");
+            assertEquals("user@example.com", userInfo.loginMethods[0].email);
         }
 
         process.kill();
@@ -233,6 +253,10 @@ public class MultitenantEmailPasswordTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants(process);
 
         TenantIdentifier t1 = new TenantIdentifier(null, "a1", null);
@@ -242,33 +266,33 @@ public class MultitenantEmailPasswordTest {
         TenantIdentifier t3 = new TenantIdentifier(null, "a1", "t2");
         TenantIdentifierWithStorage t3storage = t3.withStorage(StorageLayer.getStorage(t3, process.getProcess()));
 
-        UserInfo user1 = EmailPassword.signUp(t1storage, process.getProcess(), "user1@example.com", "password1");
-        UserInfo user2 = EmailPassword.signUp(t2storage, process.getProcess(), "user2@example.com", "password2");
-        UserInfo user3 = EmailPassword.signUp(t3storage, process.getProcess(), "user3@example.com", "password3");
+        AuthRecipeUserInfo user1 = EmailPassword.signUp(t1storage, process.getProcess(), "user1@example.com", "password1");
+        AuthRecipeUserInfo user2 = EmailPassword.signUp(t2storage, process.getProcess(), "user2@example.com", "password2");
+        AuthRecipeUserInfo user3 = EmailPassword.signUp(t3storage, process.getProcess(), "user3@example.com", "password3");
 
         Storage storage = StorageLayer.getStorage(process.getProcess());
 
         {
-            UserInfo userInfo = EmailPassword.getUserUsingId(
+            AuthRecipeUserInfo userInfo = EmailPassword.getUserUsingId(
                     StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUserWithPriorityForTenantStorage(
-                            process.getProcess(), new AppIdentifier(null, "a1"), storage, user1.id,
-                            UserIdType.SUPERTOKENS).appIdentifierWithStorage, user1.id);
+                            process.getProcess(), new AppIdentifier(null, "a1"), storage, user1.getSupertokensUserId(),
+                            UserIdType.SUPERTOKENS).appIdentifierWithStorage, user1.getSupertokensUserId());
             assertEquals(user1, userInfo);
         }
 
         {
-            UserInfo userInfo = EmailPassword.getUserUsingId(
+            AuthRecipeUserInfo userInfo = EmailPassword.getUserUsingId(
                     StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUserWithPriorityForTenantStorage(
-                            process.getProcess(), new AppIdentifier(null, "a1"), storage, user2.id,
-                            UserIdType.SUPERTOKENS).appIdentifierWithStorage, user2.id);
+                            process.getProcess(), new AppIdentifier(null, "a1"), storage, user2.getSupertokensUserId(),
+                            UserIdType.SUPERTOKENS).appIdentifierWithStorage, user2.getSupertokensUserId());
             assertEquals(user2, userInfo);
         }
 
         {
-            UserInfo userInfo = EmailPassword.getUserUsingId(
+            AuthRecipeUserInfo userInfo = EmailPassword.getUserUsingId(
                     StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUserWithPriorityForTenantStorage(
-                            process.getProcess(), new AppIdentifier(null, "a1"), storage, user3.id,
-                            UserIdType.SUPERTOKENS).appIdentifierWithStorage, user3.id);
+                            process.getProcess(), new AppIdentifier(null, "a1"), storage, user3.getSupertokensUserId(),
+                            UserIdType.SUPERTOKENS).appIdentifierWithStorage, user3.getSupertokensUserId());
             assertEquals(user3, userInfo);
         }
 
@@ -289,6 +313,10 @@ public class MultitenantEmailPasswordTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants(process);
 
         TenantIdentifier t1 = new TenantIdentifier(null, "a1", null);
@@ -298,22 +326,22 @@ public class MultitenantEmailPasswordTest {
         TenantIdentifier t3 = new TenantIdentifier(null, "a1", "t2");
         TenantIdentifierWithStorage t3storage = t3.withStorage(StorageLayer.getStorage(t3, process.getProcess()));
 
-        UserInfo user1 = EmailPassword.signUp(t1storage, process.getProcess(), "user@example.com", "password1");
-        UserInfo user2 = EmailPassword.signUp(t2storage, process.getProcess(), "user@example.com", "password2");
-        UserInfo user3 = EmailPassword.signUp(t3storage, process.getProcess(), "user@example.com", "password3");
+        AuthRecipeUserInfo user1 = EmailPassword.signUp(t1storage, process.getProcess(), "user@example.com", "password1");
+        AuthRecipeUserInfo user2 = EmailPassword.signUp(t2storage, process.getProcess(), "user@example.com", "password2");
+        AuthRecipeUserInfo user3 = EmailPassword.signUp(t3storage, process.getProcess(), "user@example.com", "password3");
 
         {
-            UserInfo userInfo = EmailPassword.getUserUsingEmail(t1storage, user1.email);
+            AuthRecipeUserInfo userInfo = EmailPassword.getUserUsingEmail(t1storage, user1.loginMethods[0].email);
             assertEquals(user1, userInfo);
         }
 
         {
-            UserInfo userInfo = EmailPassword.getUserUsingEmail(t2storage, user2.email);
+            AuthRecipeUserInfo userInfo = EmailPassword.getUserUsingEmail(t2storage, user2.loginMethods[0].email);
             assertEquals(user2, userInfo);
         }
 
         {
-            UserInfo userInfo = EmailPassword.getUserUsingEmail(t3storage, user3.email);
+            AuthRecipeUserInfo userInfo = EmailPassword.getUserUsingEmail(t3storage, user3.loginMethods[0].email);
             assertEquals(user3, userInfo);
         }
 
@@ -326,7 +354,8 @@ public class MultitenantEmailPasswordTest {
             throws InterruptedException, InvalidProviderConfigException,
             StorageQueryException, FeatureNotEnabledException, TenantOrAppNotFoundException, IOException,
             InvalidConfigException, CannotModifyBaseConfigException, BadPermissionException, DuplicateEmailException,
-            UnknownUserIdException, StorageTransactionLogicException, WrongCredentialsException {
+            UnknownUserIdException, StorageTransactionLogicException, WrongCredentialsException,
+            EmailChangeNotAllowedException {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -334,6 +363,10 @@ public class MultitenantEmailPasswordTest {
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         createTenants(process);
 
@@ -344,47 +377,50 @@ public class MultitenantEmailPasswordTest {
         TenantIdentifier t3 = new TenantIdentifier(null, "a1", "t2");
         TenantIdentifierWithStorage t3storage = t3.withStorage(StorageLayer.getStorage(t3, process.getProcess()));
 
-        UserInfo user1 = EmailPassword.signUp(t1storage, process.getProcess(), "user@example.com", "password1");
-        UserInfo user2 = EmailPassword.signUp(t2storage, process.getProcess(), "user@example.com", "password2");
-        UserInfo user3 = EmailPassword.signUp(t3storage, process.getProcess(), "user@example.com", "password3");
+        AuthRecipeUserInfo user1 = EmailPassword.signUp(t1storage, process.getProcess(), "user@example.com", "password1");
+        AuthRecipeUserInfo user2 = EmailPassword.signUp(t2storage, process.getProcess(), "user@example.com", "password2");
+        AuthRecipeUserInfo user3 = EmailPassword.signUp(t3storage, process.getProcess(), "user@example.com", "password3");
 
         Storage storage = StorageLayer.getStorage(process.getProcess());
 
         EmailPassword.updateUsersEmailOrPassword(
                 StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUserWithPriorityForTenantStorage(
-                        process.getProcess(), new AppIdentifier(null, "a1"), storage, user1.id,
+                        process.getProcess(), new AppIdentifier(null, "a1"), storage, user1.getSupertokensUserId(),
                         UserIdType.SUPERTOKENS).appIdentifierWithStorage,
-                process.getProcess(), user1.id, null, "newpassword1");
+                process.getProcess(), user1.getSupertokensUserId(), null, "newpassword1");
         EmailPassword.updateUsersEmailOrPassword(
                 StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUserWithPriorityForTenantStorage(
-                        process.getProcess(), new AppIdentifier(null, "a1"), storage, user2.id,
+                        process.getProcess(), new AppIdentifier(null, "a1"), storage, user2.getSupertokensUserId(),
                         UserIdType.SUPERTOKENS).appIdentifierWithStorage,
-                process.getProcess(), user2.id, null, "newpassword2");
+                process.getProcess(), user2.getSupertokensUserId(), null, "newpassword2");
         EmailPassword.updateUsersEmailOrPassword(
                 StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUserWithPriorityForTenantStorage(
-                        process.getProcess(), new AppIdentifier(null, "a1"), storage, user3.id,
+                        process.getProcess(), new AppIdentifier(null, "a1"), storage, user3.getSupertokensUserId(),
                         UserIdType.SUPERTOKENS).appIdentifierWithStorage,
-                process.getProcess(), user3.id, null, "newpassword3");
+                process.getProcess(), user3.getSupertokensUserId(), null, "newpassword3");
 
         {
-            t1 = StorageLayer.getTenantIdentifierWithStorageAndUserIdMappingForUser(process.getProcess(), t1, user1.id,
+            t1 = StorageLayer.getTenantIdentifierWithStorageAndUserIdMappingForUser(process.getProcess(), t1, user1.getSupertokensUserId(),
                     UserIdType.SUPERTOKENS).tenantIdentifierWithStorage;
-            UserInfo userInfo = EmailPassword.signIn(t1storage, process.getProcess(), "user@example.com", "newpassword1");
-            assertEquals(user1.id, userInfo.id);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(t1storage, process.getProcess(), "user@example.com",
+                    "newpassword1");
+            assertEquals(user1.getSupertokensUserId(), userInfo.getSupertokensUserId());
         }
 
         {
-            t2 = StorageLayer.getTenantIdentifierWithStorageAndUserIdMappingForUser(process.getProcess(), t2, user2.id,
+            t2 = StorageLayer.getTenantIdentifierWithStorageAndUserIdMappingForUser(process.getProcess(), t2, user2.getSupertokensUserId(),
                     UserIdType.SUPERTOKENS).tenantIdentifierWithStorage;
-            UserInfo userInfo = EmailPassword.signIn(t2storage, process.getProcess(), "user@example.com", "newpassword2");
-            assertEquals(user2.id, userInfo.id);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(t2storage, process.getProcess(), "user@example.com",
+                    "newpassword2");
+            assertEquals(user2.getSupertokensUserId(), userInfo.getSupertokensUserId());
         }
 
         {
-            t3 = StorageLayer.getTenantIdentifierWithStorageAndUserIdMappingForUser(process.getProcess(), t3, user3.id,
+            t3 = StorageLayer.getTenantIdentifierWithStorageAndUserIdMappingForUser(process.getProcess(), t3, user3.getSupertokensUserId(),
                     UserIdType.SUPERTOKENS).tenantIdentifierWithStorage;
-            UserInfo userInfo = EmailPassword.signIn(t3storage, process.getProcess(), "user@example.com", "newpassword3");
-            assertEquals(user3.id, userInfo.id);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(t3storage, process.getProcess(), "user@example.com",
+                    "newpassword3");
+            assertEquals(user3.getSupertokensUserId(), userInfo.getSupertokensUserId());
         }
 
         process.kill();

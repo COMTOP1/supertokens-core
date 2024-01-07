@@ -1,5 +1,5 @@
 /*
- *    Copyright (c) 2021, VRAI Labs and/or its affiliates. All rights reserved.
+ *    Copyright (c) 2023, VRAI Labs and/or its affiliates. All rights reserved.
  *
  *    This software is licensed under the Apache License, Version 2.0 (the
  *    "License") as published by the Apache Software Foundation.
@@ -14,19 +14,14 @@
  *    under the License.
  */
 
-package io.supertokens.thirdparty;
+package io.supertokens.config.annotations;
 
-import io.supertokens.pluginInterface.thirdparty.UserInfo;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
-public class UserPaginationContainer {
-    public final UserInfo[] users;
-    public final String nextPaginationToken;
-
-    public UserPaginationContainer(@Nonnull UserInfo[] users, @Nullable String nextPaginationToken) {
-        this.users = users;
-        this.nextPaginationToken = nextPaginationToken;
-    }
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.FIELD)
+public @interface IgnoreForAnnotationCheck {
 }

@@ -57,7 +57,7 @@ public class VersionTest {
         return switch (version) {
             case "2" -> SemVer.v2_9;
             case "3" -> SemVer.v2_21;
-            case "4" -> SemVer.v2_22;
+            case "4" -> SemVer.v3_0;
             default -> throw new IllegalStateException("Unexpected value: " + version);
         };
     }
@@ -120,7 +120,11 @@ public class VersionTest {
                     assertNotNull(response.get("session").getAsJsonObject().get("handle").getAsString());
                     junit.framework.TestCase.assertEquals(response.get("session").getAsJsonObject().get("userId").getAsString(), userId);
                     junit.framework.TestCase.assertEquals(response.get("session").getAsJsonObject().get("userDataInJWT").getAsJsonObject(), userDataInJWT);
-                    junit.framework.TestCase.assertEquals(response.get("session").getAsJsonObject().entrySet().size(), 3);
+                    if (getCDIVersionForAccessTokenVersion(updateVersion).lesserThan(SemVer.v3_0)) {
+                        junit.framework.TestCase.assertEquals(response.get("session").getAsJsonObject().entrySet().size(), 3);
+                    } else {
+                        junit.framework.TestCase.assertEquals(response.get("session").getAsJsonObject().entrySet().size(), 4);
+                    }
                 }
             }
         }

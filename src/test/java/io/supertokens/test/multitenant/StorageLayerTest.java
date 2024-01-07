@@ -19,8 +19,12 @@ package io.supertokens.test.multitenant;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.ProcessState;
+import io.supertokens.ResourceDistributor;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
+import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.multitenancy.MultitenancyHelper;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -37,7 +41,9 @@ import org.junit.rules.TestRule;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -89,6 +95,10 @@ public class StorageLayerTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_STORAGE));
         MultitenancyStorage mtStorage = StorageLayer.getMultitenancyStorage(process.getProcess());
 
@@ -119,6 +129,10 @@ public class StorageLayerTest {
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_STORAGE));
         MultitenancyStorage mtStorage = StorageLayer.getMultitenancyStorage(process.getProcess());
@@ -169,7 +183,7 @@ public class StorageLayerTest {
                         )
                 }),
                 new PasswordlessConfig(true),
-                new JsonObject()
+                null, null, new JsonObject()
         ));
 
         TenantConfig[] tenantConfigs = mtStorage.getAllTenants();
@@ -221,6 +235,10 @@ public class StorageLayerTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_STORAGE));
         MultitenancyStorage mtStorage = StorageLayer.getMultitenancyStorage(process.getProcess());
 
@@ -270,7 +288,7 @@ public class StorageLayerTest {
                         )
                 }),
                 new PasswordlessConfig(true),
-                new JsonObject()
+                null, null, new JsonObject()
         ));
 
         TenantConfig[] tenantConfigs = mtStorage.getAllTenants();
@@ -332,6 +350,10 @@ public class StorageLayerTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_STORAGE));
         MultitenancyStorage mtStorage = StorageLayer.getMultitenancyStorage(process.getProcess());
 
@@ -369,7 +391,7 @@ public class StorageLayerTest {
                         )
                 }),
                 new PasswordlessConfig(true),
-                new JsonObject()
+                null, null, new JsonObject()
         ));
 
         TenantConfig[] tenantConfigs = mtStorage.getAllTenants();
@@ -431,6 +453,10 @@ public class StorageLayerTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_STORAGE));
         MultitenancyStorage mtStorage = StorageLayer.getMultitenancyStorage(process.getProcess());
 
@@ -459,7 +485,7 @@ public class StorageLayerTest {
                         )
                 }),
                 new PasswordlessConfig(true),
-                new JsonObject()
+                null, null, new JsonObject()
         ));
 
         TenantConfig[] tenantConfigs = mtStorage.getAllTenants();
@@ -514,6 +540,10 @@ public class StorageLayerTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_STORAGE));
         MultitenancyStorage mtStorage = StorageLayer.getMultitenancyStorage(process.getProcess());
 
@@ -522,7 +552,7 @@ public class StorageLayerTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new JsonObject()
+                null, null, new JsonObject()
         ));
 
         TenantConfig[] tenantConfigs = mtStorage.getAllTenants();
@@ -552,6 +582,10 @@ public class StorageLayerTest {
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_STORAGE));
         MultitenancyStorage mtStorage = StorageLayer.getMultitenancyStorage(process.getProcess());
@@ -602,7 +636,7 @@ public class StorageLayerTest {
                         )
                 }),
                 new PasswordlessConfig(true),
-                new JsonObject()
+                null, null, new JsonObject()
         ));
 
         TenantConfig[] tenantConfigs = mtStorage.getAllTenants();
@@ -665,6 +699,10 @@ public class StorageLayerTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_STORAGE));
         MultitenancyStorage mtStorage = StorageLayer.getMultitenancyStorage(process.getProcess());
 
@@ -714,7 +752,7 @@ public class StorageLayerTest {
                         )
                 }),
                 new PasswordlessConfig(true),
-                new JsonObject()
+                null, null, new JsonObject()
         ));
 
         try {
@@ -752,7 +790,7 @@ public class StorageLayerTest {
                             )
                     }),
                     new PasswordlessConfig(true),
-                    new JsonObject()
+                    null, null, new JsonObject()
             ));
             fail();
         } catch (DuplicateTenantException e) {
@@ -808,6 +846,10 @@ public class StorageLayerTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_STORAGE));
         MultitenancyStorage mtStorage = StorageLayer.getMultitenancyStorage(process.getProcess());
 
@@ -858,11 +900,11 @@ public class StorageLayerTest {
                             )
                     }),
                     new PasswordlessConfig(true),
-                    new JsonObject()
+                    null, null, new JsonObject()
             ));
             fail();
         } catch (TenantOrAppNotFoundException e) {
-            // pass
+            // pass0-89uuuuuui8j=
         }
 
         process.kill();
@@ -879,6 +921,10 @@ public class StorageLayerTest {
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_STORAGE));
         MultitenancyStorage mtStorage = StorageLayer.getMultitenancyStorage(process.getProcess());
@@ -957,7 +1003,7 @@ public class StorageLayerTest {
                             )
                     }),
                     new PasswordlessConfig(true),
-                    new JsonObject()
+                    null, null, new JsonObject()
             ));
             fail();
         } catch (DuplicateThirdPartyIdException e) {
@@ -980,6 +1026,10 @@ public class StorageLayerTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_STORAGE));
         MultitenancyStorage mtStorage = StorageLayer.getMultitenancyStorage(process.getProcess());
 
@@ -1029,7 +1079,7 @@ public class StorageLayerTest {
                             )
                     }),
                     new PasswordlessConfig(true),
-                    new JsonObject()
+                    null, null, new JsonObject()
             ));
         } catch (DuplicateTenantException e) {
             fail();
@@ -1098,7 +1148,7 @@ public class StorageLayerTest {
                             )
                     }),
                     new PasswordlessConfig(true),
-                    new JsonObject()
+                    null, null, new JsonObject()
             ));
             fail();
         } catch (DuplicateTenantException e) {
@@ -1121,6 +1171,10 @@ public class StorageLayerTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_STORAGE));
         MultitenancyStorage mtStorage = StorageLayer.getMultitenancyStorage(process.getProcess());
 
@@ -1170,7 +1224,7 @@ public class StorageLayerTest {
                             )
                     }),
                     new PasswordlessConfig(true),
-                    new JsonObject()
+                    null, null, new JsonObject()
             ));
         } catch (DuplicateTenantException e) {
             fail();
@@ -1219,7 +1273,7 @@ public class StorageLayerTest {
                             )
                     }),
                     new PasswordlessConfig(true),
-                    new JsonObject()
+                    null, null, new JsonObject()
             ));
             fail();
         } catch (DuplicateTenantException e) {
@@ -1242,6 +1296,10 @@ public class StorageLayerTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_STORAGE));
         MultitenancyStorage mtStorage = StorageLayer.getMultitenancyStorage(process.getProcess());
 
@@ -1327,7 +1385,7 @@ public class StorageLayerTest {
                             )
                     }),
                     new PasswordlessConfig(true),
-                    new JsonObject()
+                    null, null, new JsonObject()
             ));
             fail();
         } catch (DuplicateClientTypeException e) {
@@ -1350,6 +1408,10 @@ public class StorageLayerTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_STORAGE));
         MultitenancyStorage mtStorage = StorageLayer.getMultitenancyStorage(process.getProcess());
 
@@ -1427,7 +1489,7 @@ public class StorageLayerTest {
                             )
                     }),
                     new PasswordlessConfig(true),
-                    new JsonObject()
+                    null, null, new JsonObject()
             ));
             fail();
         } catch (DuplicateThirdPartyIdException e) {
@@ -1450,6 +1512,10 @@ public class StorageLayerTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_STORAGE));
         MultitenancyStorage mtStorage = StorageLayer.getMultitenancyStorage(process.getProcess());
 
@@ -1535,7 +1601,7 @@ public class StorageLayerTest {
                             )
                     }),
                     new PasswordlessConfig(true),
-                    new JsonObject()
+                    null, null, new JsonObject()
             ));
             fail();
         } catch (DuplicateClientTypeException e) {
@@ -1557,8 +1623,16 @@ public class StorageLayerTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_STORAGE));
         MultitenancyStorage mtStorage = StorageLayer.getMultitenancyStorage(process.getProcess());
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
 
         JsonObject authParams = new JsonObject();
         authParams.add("auth-param", new JsonPrimitive("auth-val"));
@@ -1616,11 +1690,11 @@ public class StorageLayerTest {
                                         )
                                 }),
                                 new PasswordlessConfig(true),
-                                new JsonObject()
+                                null, null, new JsonObject()
                         ));
                         break;
                     } catch (Exception e) {
-                        if (e.getMessage().toLowerCase().contains("request timed out") || e.getMessage().contains("concurrent delete")) {
+                        if (e.getMessage().toLowerCase().contains("request timed out") || e.getMessage().contains("concurrent delete") || e.getMessage().contains("concurrent update")) {
                             // retry, because connection was timed out, or
                             // in case of postgres, number of retries may not be enough, we retry here anyway
                             continue;
@@ -1685,6 +1759,10 @@ public class StorageLayerTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         JsonObject config1 = new JsonObject();
         JsonObject config2 = new JsonObject();
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
@@ -1696,28 +1774,28 @@ public class StorageLayerTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        config1
+                        null, null, config1
                 ),
                 new TenantConfig(
                         new TenantIdentifier(null, null, "t2"),
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        config1
+                        null, null, config1
                 ),
                 new TenantConfig(
                         new TenantIdentifier(null, "a1", null),
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        config2
+                        null, null, config2
                 ),
                 new TenantConfig(
                         new TenantIdentifier(null, "a1", "t1"),
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        config2
+                        null, null, config2
                 )
         });
 
@@ -1742,6 +1820,242 @@ public class StorageLayerTest {
                 storageMap.put(uniqueId, storage);
             }
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testThatStorageIsClosedAfterTenantDeletion() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
+        JsonObject config = new JsonObject();
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, null, "t1"),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                null, null, config
+        ), false);
+
+        Storage storage = StorageLayer.getStorage(new TenantIdentifier(null, null, "t1"), process.getProcess());
+
+        Multitenancy.deleteTenant(new TenantIdentifier(null, null, "t1"), process.getProcess());
+
+        // Should not be able to query from the storage
+        try {
+            storage.getKeyValue(new TenantIdentifier(null, null, "t1"), "somekey");
+            fail();
+        } catch (IllegalStateException e) {
+            assertTrue(e.getMessage().contains("call initPool before getConnection"));
+        }
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testThatStorageIsClosedOnlyWhenNoMoreTenantsArePointingToIt() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
+        JsonObject config = new JsonObject();
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+        // 2 tenants using the same storage
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, null, "t1"),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                null, null, config
+        ), false);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, null, "t2"),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                null, null, config
+        ), false);
+
+        Storage storage = StorageLayer.getStorage(new TenantIdentifier(null, null, "t1"), process.getProcess());
+
+        Multitenancy.deleteTenant(new TenantIdentifier(null, null, "t1"), process.getProcess());
+
+        // Storage should still be active
+        storage.getKeyValue(new TenantIdentifier(null, null, "t1"), "somekey");
+
+        Multitenancy.deleteTenant(new TenantIdentifier(null, null, "t2"), process.getProcess());
+
+        // Storage should be closed now
+        try {
+            storage.getKeyValue(new TenantIdentifier(null, null, "t1"), "somekey");
+            fail();
+        } catch (IllegalStateException e) {
+            assertTrue(e.getMessage().contains("call initPool before getConnection"));
+        }
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testStorageDoesNotLoadAgainAfterTenantDeletionWhenRefreshedFromDb() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
+        JsonObject config = new JsonObject();
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+        // 2 tenants using the same storage
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, null, "t1"),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                null, null, config
+        ), false);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, null, "t2"),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                null, null, config
+        ), false);
+
+
+        String userPoolId = StorageLayer.getStorage(new TenantIdentifier(null, null, "t1"), process.getProcess()).getUserPoolId();
+
+        {
+            Set<String> userPoolIds = new HashSet<>();
+            Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingStorages = process.getProcess()
+                    .getResourceDistributor().getAllResourcesWithResourceKey(StorageLayer.RESOURCE_KEY);
+
+            for (ResourceDistributor.SingletonResource sl : existingStorages.values()) {
+                userPoolIds.add(((StorageLayer) sl).getUnderlyingStorage().getUserPoolId());
+            }
+            assertTrue(userPoolIds.contains(userPoolId));
+        }
+
+        Multitenancy.deleteTenant(new TenantIdentifier(null, null, "t1"), process.getProcess());
+        MultitenancyHelper.getInstance(process.getProcess()).refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(true);
+
+        {
+            Set<String> userPoolIds = new HashSet<>();
+            Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingStorages = process.getProcess()
+                    .getResourceDistributor().getAllResourcesWithResourceKey(StorageLayer.RESOURCE_KEY);
+
+            for (ResourceDistributor.SingletonResource sl : existingStorages.values()) {
+                userPoolIds.add(((StorageLayer) sl).getUnderlyingStorage().getUserPoolId());
+            }
+            assertTrue(userPoolIds.contains(userPoolId));
+        }
+
+        Multitenancy.deleteTenant(new TenantIdentifier(null, null, "t2"), process.getProcess());
+        MultitenancyHelper.getInstance(process.getProcess()).refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(true);
+
+        {
+            Set<String> userPoolIds = new HashSet<>();
+            Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingStorages = process.getProcess()
+                    .getResourceDistributor().getAllResourcesWithResourceKey(StorageLayer.RESOURCE_KEY);
+
+            for (ResourceDistributor.SingletonResource sl : existingStorages.values()) {
+                userPoolIds.add(((StorageLayer) sl).getUnderlyingStorage().getUserPoolId());
+            }
+            assertFalse(userPoolIds.contains(userPoolId));
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testThatOriginalStorageIsNotClosedIfTheStorageForATenantChangesAndTheOriginalStorageIsUsedByAnotherTenant() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
+        // The tenant shares storage with base
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, null, "t1"),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                null, null, new JsonObject()
+        ), false);
+
+        Storage storage = StorageLayer.getBaseStorage(process.getProcess());
+        storage.getKeyValue(TenantIdentifier.BASE_TENANT, "somekey"); // Should pass
+
+        // Change the storage
+        JsonObject config = new JsonObject();
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(config, 1);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, null, "t1"),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                null, null, config
+        ), false);
+
+        storage = StorageLayer.getBaseStorage(process.getProcess());
+        storage.getKeyValue(TenantIdentifier.BASE_TENANT, "somekey"); // Should continue to pass
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

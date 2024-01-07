@@ -26,6 +26,7 @@ import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.webserver.api.accountlinking.*;
 import io.supertokens.webserver.api.core.*;
 import io.supertokens.webserver.api.dashboard.*;
 import io.supertokens.webserver.api.emailpassword.UserAPI;
@@ -37,15 +38,14 @@ import io.supertokens.webserver.api.emailverification.VerifyEmailAPI;
 import io.supertokens.webserver.api.jwt.JWKSAPI;
 import io.supertokens.webserver.api.jwt.JWTSigningAPI;
 import io.supertokens.webserver.api.multitenancy.*;
-import io.supertokens.webserver.api.multitenancy.CreateOrUpdateAppAPI;
-import io.supertokens.webserver.api.multitenancy.CreateOrUpdateConnectionUriDomainAPI;
-import io.supertokens.webserver.api.multitenancy.CreateOrUpdateTenantAPI;
-import io.supertokens.webserver.api.multitenancy.RemoveTenantAPI;
 import io.supertokens.webserver.api.multitenancy.thirdparty.CreateOrUpdateThirdPartyConfigAPI;
 import io.supertokens.webserver.api.multitenancy.thirdparty.RemoveThirdPartyConfigAPI;
 import io.supertokens.webserver.api.passwordless.*;
 import io.supertokens.webserver.api.session.*;
+import io.supertokens.webserver.api.thirdparty.TenantMappingAPI;
+import io.supertokens.webserver.api.thirdparty.DeleteTenantMappingAPI;
 import io.supertokens.webserver.api.thirdparty.GetUsersByEmailAPI;
+import io.supertokens.webserver.api.thirdparty.ListTenantMappingConfigsAPI;
 import io.supertokens.webserver.api.thirdparty.SignInUpAPI;
 import io.supertokens.webserver.api.totp.*;
 import io.supertokens.webserver.api.useridmapping.RemoveUserIdMappingAPI;
@@ -220,8 +220,12 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new VerifyTotpAPI(main));
         addAPI(new RemoveTotpDeviceAPI(main));
         addAPI(new GetTotpDevicesAPI(main));
+        addAPI(new ImportTotpDeviceAPI(main));
         addAPI(new UpdateExternalUserIdInfoAPI(main));
         addAPI(new ImportUserWithPasswordHashAPI(main));
+        addAPI(new TenantMappingAPI(main));
+        addAPI(new ListTenantMappingConfigsAPI(main));
+        addAPI(new DeleteTenantMappingAPI(main));
         addAPI(new LicenseKeyAPI(main));
         addAPI(new EEFeatureFlagAPI(main));
         addAPI(new DashboardUserAPI(main));
@@ -240,7 +244,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new RemoveAppAPI(main));
         addAPI(new ListAppsAPI(main));
 
-        addAPI(new CreateOrUpdateTenantAPI(main));
+        addAPI(new CreateOrUpdateTenantOrGetTenantAPI(main));
         addAPI(new RemoveTenantAPI(main));
         addAPI(new ListTenantsAPI(main));
 
@@ -249,6 +253,18 @@ public class Webserver extends ResourceDistributor.SingletonResource {
 
         addAPI(new AssociateUserToTenantAPI(main));
         addAPI(new DisassociateUserFromTenant(main));
+
+        addAPI(new GetUserByIdAPI(main));
+        addAPI(new ListUsersByAccountInfoAPI(main));
+
+        addAPI(new CanCreatePrimaryUserAPI(main));
+        addAPI(new CreatePrimaryUserAPI(main));
+        addAPI(new CanLinkAccountsAPI(main));
+        addAPI(new LinkAccountsAPI(main));
+        addAPI(new UnlinkAccountAPI(main));
+        addAPI(new ConsumeResetPasswordAPI(main));
+
+        addAPI(new RequestStatsAPI(main));
 
         StandardContext context = tomcatReference.getContext();
         Tomcat tomcat = tomcatReference.getTomcat();
