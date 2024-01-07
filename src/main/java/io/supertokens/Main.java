@@ -157,6 +157,9 @@ public class Main {
             throw new QuitProgramException(e);
         }
 
+        // loading version file
+        Version.loadVersion(this, CLIOptions.get(this).getInstallationPath() + "version.yaml");
+
         Logging.info(this, TenantIdentifier.BASE_TENANT, "Completed config.yaml loading.", true);
 
         // loading storage layer
@@ -166,9 +169,6 @@ public class Main {
         } catch (InvalidConfigException e) {
             throw new QuitProgramException(e);
         }
-
-        // loading version file
-        Version.loadVersion(this, CLIOptions.get(this).getInstallationPath() + "version.yaml");
 
         // init file logging
         Logging.initFileLogging(this);
@@ -253,6 +253,9 @@ public class Main {
 
         // starts DeleteExpiredAccessTokenSigningKeys cronjob if the access token signing keys can change
         Cronjobs.addCronjob(this, DeleteExpiredAccessTokenSigningKeys.init(this, uniqueUserPoolIdsTenants));
+
+        // this is to ensure tenantInfos are in sync for the new cron job as well
+        MultitenancyHelper.getInstance(this).refreshCronjobs();
 
         // creates password hashing pool
         PasswordHashing.init(this);
