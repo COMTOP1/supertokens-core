@@ -15,7 +15,7 @@ Supertokens architecture is optimized to add secure authentication for your user
 **Three building blocks of SuperTokens architecture**
 
 1. Frontend SDK: Manages session tokens and renders login UI widgets
-2. Backend SDK: Provides APIs for sign-up, sign-in, signout, session refreshing, etc. Your Frontend will talk to these APIs
+2. Backend SDK: Provides APIs for sign-up, sign-in, sign-out, session refreshing, etc. Your Frontend will talk to these APIs
 3. SuperTokens Core: The HTTP service for the core auth logic and database operations. This service is used by the Backend SDK
 
 ## Features
