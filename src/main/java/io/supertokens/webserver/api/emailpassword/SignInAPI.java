@@ -16,25 +16,28 @@
 
 package io.supertokens.webserver.api.emailpassword;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
+import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
-import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 public class SignInAPI extends WebserverAPI {
@@ -52,6 +55,7 @@ public class SignInAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String email = InputParser.parseStringOrThrowError(input, "email", false);
         String password = InputParser.parseStringOrThrowError(input, "password", false);
@@ -62,28 +66,46 @@ public class SignInAPI extends WebserverAPI {
 
         String normalisedEmail = Utils.normaliseEmail(email);
 
+        TenantIdentifierWithStorage tenantIdentifierWithStorage = null;
         try {
-            UserInfo user = EmailPassword.signIn(super.main, normalisedEmail, password);
+            tenantIdentifierWithStorage = getTenantIdentifierWithStorageFromRequest(req);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new ServletException(e);
+        }
 
-            // if a userIdMapping exists, pass the externalUserId to the response
-            UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(super.main,
-                    user.id, UserIdType.ANY);
-            if (userIdMapping != null) {
-                user.id = userIdMapping.externalUserId;
-            }
+        try {
+            AuthRecipeUserInfo user = EmailPassword.signIn(tenantIdentifierWithStorage, super.main, normalisedEmail,
+                    password);
+            io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(tenantIdentifierWithStorage, new AuthRecipeUserInfo[]{user});
+
+            ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main,
+                    user.getSupertokensUserId()); // use the internal user id
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
-            JsonObject userJson = new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject();
+            JsonObject userJson = getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? user.toJson() :
+                    user.toJsonWithoutAccountLinking();
+            if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
+                userJson.remove("tenantIds");
+            }
             result.add("user", userJson);
+            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0)) {
+                for (LoginMethod loginMethod : user.loginMethods) {
+                    if (loginMethod.recipeId.equals(RECIPE_ID.EMAIL_PASSWORD) && normalisedEmail.equals(loginMethod.email)) {
+                        result.addProperty("recipeUserId", loginMethod.getSupertokensOrExternalUserId());
+                        break;
+                    }
+                }
+            }
+
             super.sendJsonResponse(200, result, resp);
 
         } catch (WrongCredentialsException e) {
-            Logging.debug(main, Utils.exceptionStacktraceToString(e));
+            Logging.debug(main, tenantIdentifierWithStorage, Utils.exceptionStacktraceToString(e));
             JsonObject result = new JsonObject();
             result.addProperty("status", "WRONG_CREDENTIALS_ERROR");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
 

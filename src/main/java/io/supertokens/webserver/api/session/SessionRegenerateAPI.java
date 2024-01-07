@@ -16,24 +16,29 @@
 
 package io.supertokens.webserver.api.session;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.supertokens.Main;
+import io.supertokens.exceptions.AccessTokenPayloadError;
+import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
+import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.Session;
 import io.supertokens.session.info.SessionInformationHolder;
+import io.supertokens.session.jwt.JWT;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -55,6 +60,7 @@ public class SessionRegenerateAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific, but the session is updated based on tenantId obtained from the accessToken
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String accessToken = InputParser.parseStringOrThrowError(input, "accessToken", false);
@@ -62,23 +68,44 @@ public class SessionRegenerateAPI extends WebserverAPI {
 
         JsonObject userDataInJWT = InputParser.parseJsonObjectOrThrowError(input, "userDataInJWT", true);
 
+        AppIdentifierWithStorage appIdentifierWithStorage = null;
         try {
-            SessionInformationHolder sessionInfo = Session.regenerateToken(main, accessToken, userDataInJWT);
+            appIdentifierWithStorage = this.getAppIdentifierWithStorage(req);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new ServletException(e);
+        }
+
+        try {
+            SessionInformationHolder sessionInfo = getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_21) ?
+                    Session.regenerateToken(this.getAppIdentifierWithStorage(req), main, accessToken, userDataInJWT) :
+                    Session.regenerateTokenBeforeCDI2_21(appIdentifierWithStorage, main, accessToken,
+                            userDataInJWT);
 
             JsonObject result = sessionInfo.toJsonObject();
+
+            if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
+                result.get("session").getAsJsonObject().remove("tenantId");
+            }
+            if (getVersionFromRequest(req).lesserThan(SemVer.v4_0)) {
+                result.get("session").getAsJsonObject().remove("recipeUserId");
+            }
 
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
 
         } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException
-                | InvalidKeyException | SignatureException | InvalidKeySpecException e) {
+                 | InvalidKeyException | SignatureException | InvalidKeySpecException | JWT.JWTException |
+                 UnsupportedJWTSigningAlgorithmException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
-        } catch (UnauthorisedException e) {
-            Logging.debug(main, Utils.exceptionStacktraceToString(e));
+        } catch (UnauthorisedException | TryRefreshTokenException e) {
+            Logging.debug(main, appIdentifierWithStorage.getAsPublicTenantIdentifier(),
+                    Utils.exceptionStacktraceToString(e));
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "UNAUTHORISED");
             reply.addProperty("message", e.getMessage());
             super.sendJsonResponse(200, reply, resp);
+        } catch (AccessTokenPayloadError e) {
+            throw new ServletException(new BadRequestException(e.getMessage()));
         }
     }
 

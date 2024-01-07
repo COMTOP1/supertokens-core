@@ -24,18 +24,22 @@ import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 
+@Deprecated
 public class ResetPasswordAPI extends WebserverAPI {
     private static final long serialVersionUID = -7529428297450682549L;
 
@@ -50,6 +54,7 @@ public class ResetPasswordAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String method = InputParser.parseStringOrThrowError(input, "method", false);
         String token = InputParser.parseStringOrThrowError(input, "token", false);
@@ -68,12 +73,20 @@ public class ResetPasswordAPI extends WebserverAPI {
             throw new ServletException(new WebserverAPI.BadRequestException("Password cannot be an empty string"));
         }
 
+        TenantIdentifierWithStorage tenantIdentifierWithStorage = null;
         try {
-            String userId = EmailPassword.resetPassword(super.main, token, newPassword);
+            tenantIdentifierWithStorage = getTenantIdentifierWithStorageFromRequest(req);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new ServletException(e);
+        }
+
+        try {
+            String userId = EmailPassword.resetPassword(tenantIdentifierWithStorage, super.main, token, newPassword);
+
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping.getUserIdMapping(
+                    tenantIdentifierWithStorage.toAppIdentifierWithStorage(), userId, UserIdType.SUPERTOKENS);
 
             // if userIdMapping exists, pass the externalUserId to the response
-            io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                    .getUserIdMapping(main, userId, UserIdType.ANY);
             if (userIdMapping != null) {
                 userId = userIdMapping.externalUserId;
             }
@@ -81,9 +94,11 @@ public class ResetPasswordAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
 
-            if (!(super.getVersionFromRequest(req).equals("2.7") || super.getVersionFromRequest(req).equals("2.8")
-                    || super.getVersionFromRequest(req).equals("2.9") || super.getVersionFromRequest(req).equals("2.10")
-                    || super.getVersionFromRequest(req).equals("2.11"))) {
+            if (!(super.getVersionFromRequest(req).equals(SemVer.v2_7) ||
+                    super.getVersionFromRequest(req).equals(SemVer.v2_8)
+                    || super.getVersionFromRequest(req).equals(SemVer.v2_9) ||
+                    super.getVersionFromRequest(req).equals(SemVer.v2_10)
+                    || super.getVersionFromRequest(req).equals(SemVer.v2_11))) {
                 // >= 2.12
                 result.addProperty("userId", userId);
             }
@@ -91,11 +106,13 @@ public class ResetPasswordAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
 
         } catch (ResetPasswordInvalidTokenException e) {
-            Logging.debug(main, Utils.exceptionStacktraceToString(e));
+            Logging.debug(main, tenantIdentifierWithStorage, Utils.exceptionStacktraceToString(e));
             JsonObject result = new JsonObject();
             result.addProperty("status", "RESET_PASSWORD_INVALID_TOKEN_ERROR");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | NoSuchAlgorithmException | StorageTransactionLogicException e) {
+
+        } catch (StorageQueryException | NoSuchAlgorithmException | StorageTransactionLogicException |
+                 TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
 

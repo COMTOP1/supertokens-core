@@ -16,7 +16,7 @@
 
 package io.supertokens.inmemorydb;
 
-import io.supertokens.ResourceDistributor;
+import org.sqlite.SQLiteConfig;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -32,22 +32,33 @@ public class ConnectionPool extends ResourceDistributor.SingletonResource {
     private Lock lock = new Lock();
 
     public ConnectionPool() throws SQLException {
-        this.alwaysAlive = DriverManager.getConnection(URL);
+        SQLiteConfig config = new SQLiteConfig();
+        config.enforceForeignKeys(true);
+        this.alwaysAlive = DriverManager.getConnection(URL, config.toProperties());
     }
 
-    static void initPool(Start start) throws SQLException {
-        start.getResourceDistributor().setResource(RESOURCE_KEY, new ConnectionPool());
+    static boolean isAlreadyInitialised(Start start) {
+        return getInstance(start) != null;
+    }
+
+    static void initPool(Start start, boolean ignored) throws SQLException {
+        start.getResourceDistributor()
+                .setResource(RESOURCE_KEY, new ConnectionPool());
     }
 
     public static Connection getConnection(Start start) throws SQLException {
         if (!start.enabled) {
             throw new SQLException("Storage layer disabled");
         }
-        return new ConnectionWithLocks(DriverManager.getConnection(URL), ConnectionPool.getInstance(start));
+        SQLiteConfig config = new SQLiteConfig();
+        config.enforceForeignKeys(true);
+        return new ConnectionWithLocks(DriverManager.getConnection(URL, config.toProperties()),
+                ConnectionPool.getInstance(start));
     }
 
     private static ConnectionPool getInstance(Start start) {
-        return (ConnectionPool) start.getResourceDistributor().getResource(RESOURCE_KEY);
+        return (ConnectionPool) start.getResourceDistributor()
+                .getResource(RESOURCE_KEY);
     }
 
     static void close(Start start) {

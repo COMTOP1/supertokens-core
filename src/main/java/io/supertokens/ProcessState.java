@@ -16,7 +16,9 @@
 
 package io.supertokens;
 
-import io.supertokens.ResourceDistributor.SingletonResource;
+import com.google.gson.JsonObject;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,11 +33,13 @@ public class ProcessState extends ResourceDistributor.SingletonResource {
     }
 
     public static ProcessState getInstance(Main main) {
-        SingletonResource instance = main.getResourceDistributor().getResource(RESOURCE_KEY);
-        if (instance == null) {
-            instance = main.getResourceDistributor().setResource(RESOURCE_KEY, new ProcessState());
+        try {
+            return (ProcessState) main.getResourceDistributor()
+                    .getResource(new TenantIdentifier(null, null, null), RESOURCE_KEY);
+        } catch (TenantOrAppNotFoundException e) {
+            return (ProcessState) main.getResourceDistributor()
+                    .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY, new ProcessState());
         }
-        return (ProcessState) instance;
     }
 
     public synchronized EventAndException getLastEventByName(PROCESS_STATE processState) {
@@ -48,8 +52,12 @@ public class ProcessState extends ResourceDistributor.SingletonResource {
     }
 
     public synchronized void addState(PROCESS_STATE processState, Exception e) {
+        addState(processState, e, null);
+    }
+
+    public synchronized void addState(PROCESS_STATE processState, Exception e, JsonObject data) {
         if (Main.isTesting) {
-            history.add(new EventAndException(processState, e));
+            history.add(new EventAndException(processState, e, data));
         }
     }
 
@@ -60,8 +68,7 @@ public class ProcessState extends ResourceDistributor.SingletonResource {
     /**
      * INIT: Initialization started INIT_FAILURE: Initialization failed
      * STARTED: Initialized successfully SHUTTING_DOWN: Shut down signal received STOPPED
-     * RETRYING_ACCESS_TOKEN_JWT_VERIFICATION: When access
-     * token verification fails due to change in signing key, so we retry it
+     * RETRYING_ACCESS_TOKEN_JWT_VERIFICATION: When access token verification fails due to change in signing key, so we retry it
      * CRON_TASK_ERROR_LOGGING: When an exception is thrown from a Cronjob
      * DEVICE_DRIVER_INFO_LOGGED:When program is saving deviceDriverInfo into ping
      * SERVER_PING: When program is pinging the server with information
@@ -73,22 +80,41 @@ public class ProcessState extends ResourceDistributor.SingletonResource {
      * PASSWORD_HASH_BCRYPT, PASSWORD_HASH_ARGON, PASSWORD_VERIFY_BCRYPT, PASSWORD_VERIFY_ARGON: For testing password
      * hashing
      * ADDING_REMOTE_ADDRESS_FILTER: If IP allow / deny regex has been passed, we add a filter to the tomcat server
+     * LICENSE_KEY_CHECK_NETWORK_CALL: Called when license key is added and network call is being made to check it.
+     * INVALID_LICENSE_KEY: Called when the licens key check failed
+     * SERVER_ERROR_DURING_LICENSE_KEY_CHECK_FAIL: Added when the server request failed during license key check
+     * INIT_FAILURE_DUE_TO_LICENSE_KEY_DB_CHECK: Added if license key check in db failed on core start
+     * LOADING_ALL_TENANT_CONFIG: Added when the Config.loadAllTenantConfig function is called, either on core start,
+     * or during API call which adds / modifies tenant
+     * LOADING_ALL_TENANT_STORAGE: Added when the StorageLayer.loadAllTenantStorage function is called, either on
+     * core start,
+     * * or during API call which adds / modifies tenant
      */
     public enum PROCESS_STATE {
         INIT, INIT_FAILURE, STARTED, SHUTTING_DOWN, STOPPED, RETRYING_ACCESS_TOKEN_JWT_VERIFICATION,
         CRON_TASK_ERROR_LOGGING, WAITING_TO_INIT_STORAGE_MODULE, GET_SESSION_NEW_TOKENS, DEADLOCK_FOUND,
-        CREATING_NEW_TABLE, SENDING_TELEMETRY, SENT_TELEMETRY, SETTING_ACCESS_TOKEN_SIGNING_KEY_TO_NULL,
+        CREATING_NEW_TABLE, SENDING_TELEMETRY, SENT_TELEMETRY, UPDATING_ACCESS_TOKEN_SIGNING_KEYS,
         PASSWORD_HASH_BCRYPT, PASSWORD_HASH_ARGON, PASSWORD_VERIFY_BCRYPT, PASSWORD_VERIFY_ARGON,
-        PASSWORD_VERIFY_FIREBASE_SCRYPT, ADDING_REMOTE_ADDRESS_FILTER
+        PASSWORD_VERIFY_FIREBASE_SCRYPT, ADDING_REMOTE_ADDRESS_FILTER, LICENSE_KEY_CHECK_NETWORK_CALL,
+        INVALID_LICENSE_KEY, SERVER_ERROR_DURING_LICENSE_KEY_CHECK_FAIL, LOADING_ALL_TENANT_CONFIG,
+        LOADING_ALL_TENANT_STORAGE, TENANTS_CHANGED_DURING_REFRESH_FROM_DB
     }
 
     public static class EventAndException {
         public Exception exception;
+        public JsonObject data;
         PROCESS_STATE state;
 
         public EventAndException(PROCESS_STATE state, Exception e) {
             this.state = state;
             this.exception = e;
+            this.data = null;
+        }
+
+        public EventAndException(PROCESS_STATE state, Exception e, JsonObject data) {
+            this.state = state;
+            this.exception = e;
+            this.data = data;
         }
     }
 

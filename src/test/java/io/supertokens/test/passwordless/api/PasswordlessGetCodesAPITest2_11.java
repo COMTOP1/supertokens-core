@@ -20,9 +20,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.passwordless.Passwordless;
-import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.passwordless.UserInfo;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessStorage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -30,16 +29,18 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 
+import io.supertokens.utils.SemVer;
+import io.supertokens.test.httpRequest.HttpResponseException;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import static io.supertokens.test.passwordless.PasswordlessUtility.EMAIL;
-import static org.junit.Assert.*;
-
 import java.util.HashMap;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class PasswordlessGetCodesAPITest2_11 {
     @Rule
@@ -73,14 +74,15 @@ public class PasswordlessGetCodesAPITest2_11 {
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
-                        Utils.getCdiVersion2_10ForTests(), "passwordless");
+                        SemVer.v2_10.get(), "passwordless");
             } catch (HttpResponseException e) {
                 error = e;
             }
             assertNotNull(error);
             assertEquals(400, error.statusCode);
             assertEquals(
-                    "Http error. Status Code: 400. Message: Please provide exactly one of email, phoneNumber, deviceId or preAuthSessionId",
+                    "Http error. Status Code: 400. Message: Please provide exactly one of email, phoneNumber, " +
+                            "deviceId or preAuthSessionId",
                     error.getMessage());
         }
 
@@ -91,14 +93,15 @@ public class PasswordlessGetCodesAPITest2_11 {
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
-                        Utils.getCdiVersion2_10ForTests(), "passwordless");
+                        SemVer.v2_10.get(), "passwordless");
             } catch (HttpResponseException e) {
                 error = e;
             }
             assertNotNull(error);
             assertEquals(400, error.statusCode);
             assertEquals(
-                    "Http error. Status Code: 400. Message: Please provide exactly one of email, phoneNumber, deviceId or preAuthSessionId",
+                    "Http error. Status Code: 400. Message: Please provide exactly one of email, phoneNumber, " +
+                            "deviceId or preAuthSessionId",
                     error.getMessage());
         }
 
@@ -110,7 +113,7 @@ public class PasswordlessGetCodesAPITest2_11 {
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
-                        Utils.getCdiVersion2_10ForTests(), "passwordless");
+                        SemVer.v2_10.get(), "passwordless");
             } catch (HttpResponseException e) {
                 error = e;
             }
@@ -137,7 +140,7 @@ public class PasswordlessGetCodesAPITest2_11 {
         HashMap<String, String> map = new HashMap<>();
         map.put("deviceId", "nothing");
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null, Utils.getCdiVersion2_10ForTests(),
+                "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null, SemVer.v2_10.get(),
                 "passwordless");
 
         assertEquals("OK", response.get("status").getAsString());
@@ -160,7 +163,7 @@ public class PasswordlessGetCodesAPITest2_11 {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         String email = "test@example.com";
         String codeId = io.supertokens.utils.Utils.getUUID();
@@ -175,7 +178,7 @@ public class PasswordlessGetCodesAPITest2_11 {
             map.put("preAuthSessionId", deviceIdHash);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
-                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+                    SemVer.v2_10.get(), "passwordless");
 
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(2, response.entrySet().size());
@@ -183,9 +186,9 @@ public class PasswordlessGetCodesAPITest2_11 {
             assertEquals(0, response.get("devices").getAsJsonArray().size());
         }
 
-        storage.createDeviceWithCode(email, null, "linkCodeSalt",
+        storage.createDeviceWithCode(new TenantIdentifier(null, null, null), email, null, "linkCodeSalt",
                 new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, System.currentTimeMillis()));
-        assertEquals(1, storage.getDevicesByEmail(email).length);
+        assertEquals(1, storage.getDevicesByEmail(new TenantIdentifier(null, null, null), email).length);
 
         // match
 
@@ -194,7 +197,7 @@ public class PasswordlessGetCodesAPITest2_11 {
             map.put("preAuthSessionId", deviceIdHash);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
-                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+                    SemVer.v2_10.get(), "passwordless");
 
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(2, response.entrySet().size());
@@ -219,7 +222,7 @@ public class PasswordlessGetCodesAPITest2_11 {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         String email = "test@example.com";
         String codeId = io.supertokens.utils.Utils.getUUID();
 
@@ -232,7 +235,7 @@ public class PasswordlessGetCodesAPITest2_11 {
             map.put("email", email);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
-                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+                    SemVer.v2_10.get(), "passwordless");
 
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(2, response.entrySet().size());
@@ -242,16 +245,16 @@ public class PasswordlessGetCodesAPITest2_11 {
 
         // OK with matching codes
         {
-            storage.createDeviceWithCode(email, null, "linkCodeSalt",
+            storage.createDeviceWithCode(new TenantIdentifier(null, null, null), email, null, "linkCodeSalt",
                     new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, System.currentTimeMillis()));
-            assertEquals(1, storage.getDevicesByEmail(email).length);
+            assertEquals(1, storage.getDevicesByEmail(new TenantIdentifier(null, null, null), email).length);
 
             {
                 HashMap<String, String> map = new HashMap<>();
-                map.put("email", email);
+                map.put("email", email.toUpperCase());
                 JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
-                        Utils.getCdiVersion2_10ForTests(), "passwordless");
+                        SemVer.v2_10.get(), "passwordless");
 
                 assertEquals("OK", response.get("status").getAsString());
                 assertEquals(2, response.entrySet().size());
@@ -276,7 +279,7 @@ public class PasswordlessGetCodesAPITest2_11 {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         String phoneNumber = "+918989898989";
         String codeId = io.supertokens.utils.Utils.getUUID();
 
@@ -289,7 +292,7 @@ public class PasswordlessGetCodesAPITest2_11 {
             map.put("phoneNumber", phoneNumber);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
-                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+                    SemVer.v2_10.get(), "passwordless");
 
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(2, response.entrySet().size());
@@ -299,16 +302,17 @@ public class PasswordlessGetCodesAPITest2_11 {
 
         // OK with matching codes
         {
-            storage.createDeviceWithCode(null, phoneNumber, "linkCodeSalt",
+            storage.createDeviceWithCode(new TenantIdentifier(null, null, null), null, phoneNumber, "linkCodeSalt",
                     new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, System.currentTimeMillis()));
-            assertEquals(1, storage.getDevicesByPhoneNumber(phoneNumber).length);
+            assertEquals(1,
+                    storage.getDevicesByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber).length);
 
             {
                 HashMap<String, String> map = new HashMap<>();
                 map.put("phoneNumber", phoneNumber);
                 JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
-                        Utils.getCdiVersion2_10ForTests(), "passwordless");
+                        SemVer.v2_10.get(), "passwordless");
 
                 assertEquals("OK", response.get("status").getAsString());
                 assertEquals(2, response.entrySet().size());
@@ -333,7 +337,7 @@ public class PasswordlessGetCodesAPITest2_11 {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         String deviceID = "randomDeviceID";
         String phoneNumber = "+918989898989";
 
@@ -343,7 +347,7 @@ public class PasswordlessGetCodesAPITest2_11 {
             map.put("deviceId", deviceID);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
-                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+                    SemVer.v2_10.get(), "passwordless");
 
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(2, response.entrySet().size());
@@ -359,14 +363,15 @@ public class PasswordlessGetCodesAPITest2_11 {
 
             deviceID = createCodeResponse.deviceId;
 
-            assertEquals(1, storage.getDevicesByPhoneNumber(phoneNumber).length);
+            assertEquals(1,
+                    storage.getDevicesByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber).length);
             // TODO: deviceID =
             {
                 HashMap<String, String> map = new HashMap<>();
                 map.put("deviceId", deviceID);
                 JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
-                        Utils.getCdiVersion2_10ForTests(), "passwordless");
+                        SemVer.v2_10.get(), "passwordless");
 
                 assertEquals("OK", response.get("status").getAsString());
                 assertEquals(2, response.entrySet().size());

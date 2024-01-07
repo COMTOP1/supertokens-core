@@ -22,13 +22,14 @@ import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.Session;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 public class SessionUserAPI extends WebserverAPI {
@@ -46,11 +47,33 @@ public class SessionUserAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific, also finds across all tenants in the app if fetchAcrossAllTenants is set to true
         String userId = InputParser.getQueryParamOrThrowError(req, "userId", false);
         assert userId != null;
 
+        String fetchAcrossAllTenantsString = InputParser.getQueryParamOrThrowError(req, "fetchAcrossAllTenants", true);
+
+        boolean fetchAcrossAllTenants = true;
+        if (fetchAcrossAllTenantsString != null) {
+            fetchAcrossAllTenants = fetchAcrossAllTenantsString.toLowerCase().equals("true");
+        }
+
+        String fetchSessionsForAllLinkedAccountsString = InputParser.getQueryParamOrThrowError(req,
+                "fetchSessionsForAllLinkedAccounts", true);
+        boolean fetchSessionsForAllLinkedAccounts = true;
+        if (fetchSessionsForAllLinkedAccountsString != null) {
+            fetchSessionsForAllLinkedAccounts = fetchSessionsForAllLinkedAccountsString.toLowerCase().equals("true");
+        }
+
         try {
-            String[] sessionHandles = Session.getAllNonExpiredSessionHandlesForUser(main, userId);
+            String[] sessionHandles;
+            if (fetchAcrossAllTenants) {
+                sessionHandles = Session.getAllNonExpiredSessionHandlesForUser(
+                        main, this.getAppIdentifierWithStorage(req), userId, fetchSessionsForAllLinkedAccounts);
+            } else {
+                sessionHandles = Session.getAllNonExpiredSessionHandlesForUser(
+                        this.getTenantIdentifierWithStorageFromRequest(req), userId, fetchSessionsForAllLinkedAccounts);
+            }
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
@@ -61,7 +84,7 @@ public class SessionUserAPI extends WebserverAPI {
             result.add("sessionHandles", arr);
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

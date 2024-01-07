@@ -19,14 +19,16 @@ package io.supertokens.webserver.api.emailverification;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.emailverification.EmailVerification;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 public class UnverifyEmailAPI extends WebserverAPI {
@@ -43,18 +45,20 @@ public class UnverifyEmailAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         String email = InputParser.parseStringOrThrowError(input, "email", false);
+        email = Utils.normaliseEmail(email);
 
         try {
-            EmailVerification.unverifyEmail(main, userId, email);
+            EmailVerification.unverifyEmail(this.getAppIdentifierWithStorage(req), userId, email);
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
 
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

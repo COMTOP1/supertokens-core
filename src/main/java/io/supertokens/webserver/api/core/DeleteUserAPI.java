@@ -16,20 +16,22 @@
 
 package io.supertokens.webserver.api.core;
 
-import java.io.IOException;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import com.google.gson.JsonObject;
-
+import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
-import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.IOException;
 
 public class DeleteUserAPI extends WebserverAPI {
 
@@ -46,15 +48,30 @@ public class DeleteUserAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // this API is app specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
-        try {
-            AuthRecipe.deleteUser(super.main, userId);
-            JsonObject result = new JsonObject();
-            result.addProperty("status", "OK");
-            super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException e) {
-            throw new ServletException(e);
+        Boolean removeAllLinkedAccounts = InputParser.parseBooleanOrThrowError(input, "removeAllLinkedAccounts", true);
+
+        if (removeAllLinkedAccounts == null) {
+            removeAllLinkedAccounts = true;
         }
+
+        try {
+            AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
+                    this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, UserIdType.ANY);
+
+            AuthRecipe.deleteUser(appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage, userId,
+                    removeAllLinkedAccounts,
+                    appIdentifierWithStorageAndUserIdMapping.userIdMapping);
+        } catch (StorageQueryException | TenantOrAppNotFoundException | StorageTransactionLogicException e) {
+            throw new ServletException(e);
+        } catch (UnknownUserIdException e) {
+            // Do nothing
+        }
+
+        JsonObject result = new JsonObject();
+        result.addProperty("status", "OK");
+        super.sendJsonResponse(200, result, resp);
     }
 }

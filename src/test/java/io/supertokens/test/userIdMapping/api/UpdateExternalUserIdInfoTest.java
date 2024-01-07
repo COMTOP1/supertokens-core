@@ -20,7 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -28,6 +28,7 @@ import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -66,7 +67,7 @@ public class UpdateExternalUserIdInfoTest {
             try {
                 HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/external-user-id-info", new JsonObject(), 1000, 1000, null,
-                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                        SemVer.v2_15.get(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -84,7 +85,7 @@ public class UpdateExternalUserIdInfoTest {
             try {
                 HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/external-user-id-info", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                        SemVer.v2_15.get(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -102,7 +103,7 @@ public class UpdateExternalUserIdInfoTest {
             try {
                 HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/external-user-id-info", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                        SemVer.v2_15.get(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -120,7 +121,7 @@ public class UpdateExternalUserIdInfoTest {
             try {
                 HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/external-user-id-info", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                        SemVer.v2_15.get(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -138,7 +139,7 @@ public class UpdateExternalUserIdInfoTest {
             try {
                 HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/external-user-id-info", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                        SemVer.v2_15.get(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -155,7 +156,7 @@ public class UpdateExternalUserIdInfoTest {
             try {
                 HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/external-user-id-info", response, 1000, 1000, null,
-                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                        SemVer.v2_15.get(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -173,7 +174,7 @@ public class UpdateExternalUserIdInfoTest {
             try {
                 HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/external-user-id-info", response, 1000, 1000, null,
-                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                        SemVer.v2_15.get(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -205,7 +206,7 @@ public class UpdateExternalUserIdInfoTest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/userid/external-user-id-info", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                    SemVer.v2_15.get(), "useridmapping");
             assertEquals(1, response.entrySet().size());
             assertEquals("UNKNOWN_MAPPING_ERROR", response.get("status").getAsString());
         }
@@ -219,7 +220,7 @@ public class UpdateExternalUserIdInfoTest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/userid/external-user-id-info", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                    SemVer.v2_15.get(), "useridmapping");
             assertEquals(1, response.entrySet().size());
             assertEquals("UNKNOWN_MAPPING_ERROR", response.get("status").getAsString());
         }
@@ -233,7 +234,7 @@ public class UpdateExternalUserIdInfoTest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/userid/external-user-id-info", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                    SemVer.v2_15.get(), "useridmapping");
             assertEquals(1, response.entrySet().size());
             assertEquals("UNKNOWN_MAPPING_ERROR", response.get("status").getAsString());
         }
@@ -246,7 +247,7 @@ public class UpdateExternalUserIdInfoTest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/userid/external-user-id-info", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                    SemVer.v2_15.get(), "useridmapping");
             assertEquals(1, response.entrySet().size());
             assertEquals("UNKNOWN_MAPPING_ERROR", response.get("status").getAsString());
         }
@@ -268,8 +269,8 @@ public class UpdateExternalUserIdInfoTest {
 
         // create userId mapping with externalUserIdInfo
         String externalUserIdInfo = "externalUserIdInfo";
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        UserIdMapping userIdMapping = new io.supertokens.pluginInterface.useridmapping.UserIdMapping(userInfo.id,
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        UserIdMapping userIdMapping = new io.supertokens.pluginInterface.useridmapping.UserIdMapping(userInfo.getSupertokensUserId(),
                 "externalUserIdInfo", externalUserIdInfo);
 
         Utils.createUserIdMappingAndCheckThatItExists(process.main, userIdMapping);
@@ -287,7 +288,7 @@ public class UpdateExternalUserIdInfoTest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/userid/external-user-id-info", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                    SemVer.v2_15.get(), "useridmapping");
             assertEquals(1, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
 
@@ -311,7 +312,7 @@ public class UpdateExternalUserIdInfoTest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/userid/external-user-id-info", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                    SemVer.v2_15.get(), "useridmapping");
             assertEquals(1, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
 
@@ -339,8 +340,8 @@ public class UpdateExternalUserIdInfoTest {
 
         // create userId mapping with externalUserIdInfo
         String externalUserIdInfo = "externalUserIdInfo";
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        UserIdMapping userIdMapping = new io.supertokens.pluginInterface.useridmapping.UserIdMapping(userInfo.id,
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        UserIdMapping userIdMapping = new io.supertokens.pluginInterface.useridmapping.UserIdMapping(userInfo.getSupertokensUserId(),
                 "externalUserIdInfo", externalUserIdInfo);
 
         Utils.createUserIdMappingAndCheckThatItExists(process.main, userIdMapping);
@@ -358,7 +359,7 @@ public class UpdateExternalUserIdInfoTest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/userid/external-user-id-info", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                    SemVer.v2_15.get(), "useridmapping");
             assertEquals(1, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
 
@@ -382,7 +383,7 @@ public class UpdateExternalUserIdInfoTest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/userid/external-user-id-info", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                    SemVer.v2_15.get(), "useridmapping");
             assertEquals(1, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
 
@@ -410,8 +411,8 @@ public class UpdateExternalUserIdInfoTest {
 
         // create userId mapping with externalUserIdInfo
         String externalUserIdInfo = "externalUserIdInfo";
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        UserIdMapping userIdMapping = new io.supertokens.pluginInterface.useridmapping.UserIdMapping(userInfo.id,
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        UserIdMapping userIdMapping = new io.supertokens.pluginInterface.useridmapping.UserIdMapping(userInfo.getSupertokensUserId(),
                 "externalUserIdInfo", externalUserIdInfo);
 
         Utils.createUserIdMappingAndCheckThatItExists(process.main, userIdMapping);
@@ -423,7 +424,7 @@ public class UpdateExternalUserIdInfoTest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/userid/external-user-id-info", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                SemVer.v2_15.get(), "useridmapping");
         assertEquals(1, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
 

@@ -20,9 +20,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
-import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.thirdparty.UserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -30,6 +28,7 @@ import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -71,7 +70,7 @@ public class ThirdPartyAPITest {
         String email = "test@example.com";
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, thirdPartyId, thirdPartyUserId,
                 email);
-        String superTokensUserId = signInUpResponse.user.id;
+        String superTokensUserId = signInUpResponse.user.getSupertokensUserId();
         String externalUserId = "externalId";
 
         // create the mapping
@@ -97,7 +96,7 @@ public class ThirdPartyAPITest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/signinup", signInRequestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "thirdparty");
+                    SemVer.v2_15.get(), "thirdparty");
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(externalUserId, response.get("user").getAsJsonObject().get("id").getAsString());
         }
@@ -131,7 +130,7 @@ public class ThirdPartyAPITest {
         String email = "test@example.com";
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, thirdPartyId, thirdPartyUserId,
                 email);
-        String superTokensUserId = signInUpResponse.user.id;
+        String superTokensUserId = signInUpResponse.user.getSupertokensUserId();
         String externalUserId = "externalId";
 
         // create the mapping
@@ -144,7 +143,7 @@ public class ThirdPartyAPITest {
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/users/by-email", query, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "thirdparty");
+                    SemVer.v2_15.get(), "thirdparty");
             assertEquals("OK", response.get("status").getAsString());
 
             JsonArray users = response.get("users").getAsJsonArray();
@@ -173,7 +172,7 @@ public class ThirdPartyAPITest {
         String email = "test@example.com";
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, thirdPartyId, thirdPartyUserId,
                 email);
-        String superTokensUserId = signInUpResponse.user.id;
+        String superTokensUserId = signInUpResponse.user.getSupertokensUserId();
         String externalUserId = "externalId";
 
         // create the mapping
@@ -185,7 +184,7 @@ public class ThirdPartyAPITest {
             query.put("userId", superTokensUserId);
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/user", query, 1000, 1000, null, Utils.getCdiVersion2_15ForTests(),
+                    "http://localhost:3567/recipe/user", query, 1000, 1000, null, SemVer.v2_15.get(),
                     "thirdparty");
 
             assertEquals("OK", response.get("status").getAsString());
@@ -214,7 +213,7 @@ public class ThirdPartyAPITest {
         String email = "test@example.com";
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, thirdPartyId, thirdPartyUserId,
                 email);
-        String superTokensUserId = signInUpResponse.user.id;
+        String superTokensUserId = signInUpResponse.user.getSupertokensUserId();
         String externalUserId = "externalId";
 
         // create the mapping
@@ -227,7 +226,7 @@ public class ThirdPartyAPITest {
             query.put("thirdPartyUserId", thirdPartyUserId);
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/user", query, 1000, 1000, null, Utils.getCdiVersion2_15ForTests(),
+                    "http://localhost:3567/recipe/user", query, 1000, 1000, null, SemVer.v2_15.get(),
                     "thirdparty");
 
             assertEquals("OK", response.get("status").getAsString());

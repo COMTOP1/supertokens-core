@@ -19,6 +19,7 @@ package io.supertokens.test.userRoles.api;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -26,6 +27,7 @@ import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.userroles.UserRoles;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -50,7 +52,7 @@ public class RemoveUserRoleAPITest {
 
     @Test
     public void testBadInput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -64,7 +66,7 @@ public class RemoveUserRoleAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/role/remove", new JsonObject(), 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "userroles");
+                        SemVer.v2_14.get(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -80,7 +82,7 @@ public class RemoveUserRoleAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/role/remove", request, 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "userroles");
+                        SemVer.v2_14.get(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -97,7 +99,7 @@ public class RemoveUserRoleAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/role/remove", request, 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "userroles");
+                        SemVer.v2_14.get(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -112,7 +114,7 @@ public class RemoveUserRoleAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/role/remove", request, 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "userroles");
+                        SemVer.v2_14.get(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -128,7 +130,7 @@ public class RemoveUserRoleAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/role/remove", request, 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "userroles");
+                        SemVer.v2_14.get(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -143,7 +145,7 @@ public class RemoveUserRoleAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/role/remove", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "userroles");
+                        SemVer.v2_14.get(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -157,7 +159,7 @@ public class RemoveUserRoleAPITest {
 
     @Test
     public void testRemovingARoleFromAUser() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -166,9 +168,9 @@ public class RemoveUserRoleAPITest {
             return;
         }
 
-        String[] roles = new String[] { "role1" };
+        String[] roles = new String[]{"role1"};
         String userId = "userId";
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         // create a role
         UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[0], null);
@@ -178,7 +180,7 @@ public class RemoveUserRoleAPITest {
 
         {
             // check that the user has the role
-            String[] userRoles = storage.getRolesForUser(userId);
+            String[] userRoles = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
             Utils.checkThatArraysAreEqual(roles, userRoles);
         }
 
@@ -189,13 +191,13 @@ public class RemoveUserRoleAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user/role/remove", request, 1000, 1000, null,
-                Utils.getCdiVersion2_14ForTests(), "userroles");
+                SemVer.v2_14.get(), "userroles");
         assertEquals(2, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
         assertTrue(response.get("didUserHaveRole").getAsBoolean());
 
         // check that user doesnt have any role
-        String[] userRoles = storage.getRolesForUser(userId);
+        String[] userRoles = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
         assertEquals(0, userRoles.length);
 
         process.kill();
@@ -204,7 +206,7 @@ public class RemoveUserRoleAPITest {
 
     @Test
     public void testRemovingARoleFromAUserWhereTheUserDoesNotHaveTheRole() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -213,9 +215,9 @@ public class RemoveUserRoleAPITest {
             return;
         }
 
-        String[] roles = new String[] { "role1" };
+        String[] roles = new String[]{"role1"};
         String userId = "userId";
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         // create a role
         UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[0], null);
@@ -227,7 +229,7 @@ public class RemoveUserRoleAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user/role/remove", request, 1000, 1000, null,
-                Utils.getCdiVersion2_14ForTests(), "userroles");
+                SemVer.v2_14.get(), "userroles");
         assertEquals(2, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
         assertFalse(response.get("didUserHaveRole").getAsBoolean());
@@ -238,7 +240,7 @@ public class RemoveUserRoleAPITest {
 
     @Test
     public void testRemovingAnUnknownRoleFromAUser() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -253,7 +255,7 @@ public class RemoveUserRoleAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user/role/remove", request, 1000, 1000, null,
-                Utils.getCdiVersion2_14ForTests(), "userroles");
+                SemVer.v2_14.get(), "userroles");
 
         assertEquals(1, response.entrySet().size());
         assertEquals("UNKNOWN_ROLE_ERROR", response.get("status").getAsString());

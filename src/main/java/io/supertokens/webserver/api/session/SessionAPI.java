@@ -17,37 +17,45 @@
 package io.supertokens.webserver.api.session;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
+import io.supertokens.config.Config;
+import io.supertokens.exceptions.AccessTokenPayloadError;
 import io.supertokens.exceptions.UnauthorisedException;
+import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.SessionInfo;
 import io.supertokens.session.Session;
-import io.supertokens.session.accessToken.AccessTokenSigningKey;
-import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
+import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.session.info.SessionInformationHolder;
+import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.List;
 
 public class SessionAPI extends WebserverAPI {
     private static final long serialVersionUID = 7142317017402226537L;
@@ -63,6 +71,9 @@ public class SessionAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
+        SemVer version = super.getVersionFromRequest(req);
+
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         assert userId != null;
@@ -74,39 +85,88 @@ public class SessionAPI extends WebserverAPI {
         assert userDataInDatabase != null;
 
         try {
-            SessionInformationHolder sessionInfo = Session.createNewSession(main, userId, userDataInJWT,
-                    userDataInDatabase, enableAntiCsrf);
+            boolean useStaticSigningKey = !Config.getConfig(this.getTenantIdentifierWithStorageFromRequest(req), main)
+                    .getAccessTokenSigningKeyDynamic();
+            if (version.greaterThanOrEqualTo(SemVer.v2_21)) {
+                Boolean useDynamicSigningKey = InputParser.parseBooleanOrThrowError(input, "useDynamicSigningKey",
+                        true);
+
+                // useDynamicSigningKey defaults to true, so we check if it has been explicitly set to true
+                useStaticSigningKey = Boolean.FALSE.equals(useDynamicSigningKey);
+            }
+
+            AccessToken.VERSION accessTokenVersion = AccessToken.getAccessTokenVersionForCDI(version);
+
+            SessionInformationHolder sessionInfo = Session.createNewSession(
+                    this.getTenantIdentifierWithStorageFromRequest(req), main, userId, userDataInJWT,
+                    userDataInDatabase, enableAntiCsrf, accessTokenVersion,
+                    useStaticSigningKey);
+
+            if (StorageLayer.getStorage(this.getTenantIdentifierWithStorageFromRequest(req), main).getType() ==
+                    STORAGE_TYPE.SQL) {
+                try {
+                    io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping =
+                            io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                                    this.getAppIdentifierWithStorage(req),
+                                    sessionInfo.session.userId, UserIdType.ANY);
+                    if (userIdMapping != null) {
+                        ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main,
+                                userIdMapping.superTokensUserId);
+                    } else {
+                        ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main,
+                                sessionInfo.session.userId);
+                    }
+                } catch (StorageQueryException ignored) {
+                }
+            }
 
             JsonObject result = sessionInfo.toJsonObject();
 
+            if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
+                result.get("session").getAsJsonObject().remove("tenantId");
+            }
+            if (version.lesserThan(SemVer.v4_0)) {
+                result.get("session").getAsJsonObject().remove("recipeUserId");
+            }
+
             result.addProperty("status", "OK");
 
-            result.addProperty("jwtSigningPublicKey",
-                    new Utils.PubPriKey(AccessTokenSigningKey.getInstance(main).getLatestIssuedKey().value).publicKey);
-            result.addProperty("jwtSigningPublicKeyExpiryTime",
-                    AccessTokenSigningKey.getInstance(main).getKeyExpiryTime());
-
-            if (!super.getVersionFromRequest(req).equals("2.7") && !super.getVersionFromRequest(req).equals("2.8")) {
-                List<KeyInfo> keys = AccessTokenSigningKey.getInstance(main).getAllKeys();
-                JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
-                result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
+            if (super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_21)) {
+                result.remove("idRefreshToken");
+            } else {
+                Utils.addLegacySigningKeyInfos(this.getAppIdentifierWithStorage(req), main, result,
+                        super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_21));
             }
 
             super.sendJsonResponse(200, result, resp);
-        } catch (NoSuchAlgorithmException | StorageQueryException | InvalidKeyException | InvalidKeySpecException
-                | StorageTransactionLogicException | SignatureException | IllegalBlockSizeException
-                | BadPaddingException | InvalidAlgorithmParameterException | NoSuchPaddingException e) {
+        } catch (AccessTokenPayloadError e) {
+            throw new ServletException(new BadRequestException(e.getMessage()));
+        } catch (NoSuchAlgorithmException | StorageQueryException | InvalidKeyException | InvalidKeySpecException |
+                 StorageTransactionLogicException | SignatureException | IllegalBlockSizeException |
+                 BadPaddingException | InvalidAlgorithmParameterException | NoSuchPaddingException |
+                 TenantOrAppNotFoundException | UnsupportedJWTSigningAlgorithmException e) {
             throw new ServletException(e);
         }
     }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific but tenant id is derived from the session handle
         String sessionHandle = InputParser.getQueryParamOrThrowError(req, "sessionHandle", false);
         assert sessionHandle != null;
 
+        TenantIdentifierWithStorage tenantIdentifierWithStorage = null;
         try {
-            SessionInfo sessionInfo = Session.getSession(main, sessionHandle);
+            AppIdentifierWithStorage appIdentifier = getAppIdentifierWithStorage(req);
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
+                    appIdentifier.getAppId(), Session.getTenantIdFromSessionHandle(sessionHandle));
+            tenantIdentifierWithStorage = tenantIdentifier.withStorage(StorageLayer.getStorage(tenantIdentifier, main));
+        } catch (TenantOrAppNotFoundException e) {
+            throw new ServletException(e);
+        }
+
+        try {
+            SessionInfo sessionInfo = Session.getSession(tenantIdentifierWithStorage, sessionHandle);
 
             JsonObject result = new Gson().toJsonTree(sessionInfo).getAsJsonObject();
             result.add("userDataInJWT", Utils.toJsonTreeWithNulls(sessionInfo.userDataInJWT));
@@ -114,12 +174,19 @@ public class SessionAPI extends WebserverAPI {
 
             result.addProperty("status", "OK");
 
+            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v3_0)) {
+                result.addProperty("tenantId", tenantIdentifierWithStorage.getTenantId());
+            }
+            if (getVersionFromRequest(req).lesserThan(SemVer.v4_0)) {
+                result.remove("recipeUserId");
+            }
+
             super.sendJsonResponse(200, result, resp);
 
         } catch (StorageQueryException e) {
             throw new ServletException(e);
         } catch (UnauthorisedException e) {
-            Logging.debug(main, Utils.exceptionStacktraceToString(e));
+            Logging.debug(main, tenantIdentifierWithStorage, Utils.exceptionStacktraceToString(e));
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "UNAUTHORISED");
             reply.addProperty("message", e.getMessage());

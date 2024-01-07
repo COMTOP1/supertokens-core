@@ -16,33 +16,31 @@
 
 package io.supertokens.webserver.api.passwordless;
 
+import com.google.gson.JsonObject;
+import io.supertokens.ActiveUsers;
+import io.supertokens.Main;
+import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.passwordless.Passwordless;
+import io.supertokens.passwordless.Passwordless.ConsumeCodeResponse;
+import io.supertokens.passwordless.exceptions.*;
+import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.authRecipe.LoginMethod;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.utils.SemVer;
+import io.supertokens.webserver.InputParser;
+import io.supertokens.webserver.WebserverAPI;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-
-import io.supertokens.Main;
-import io.supertokens.passwordless.Passwordless;
-import io.supertokens.passwordless.Passwordless.ConsumeCodeResponse;
-import io.supertokens.passwordless.exceptions.Base64EncodingException;
-import io.supertokens.passwordless.exceptions.DeviceIdHashMismatchException;
-import io.supertokens.passwordless.exceptions.ExpiredUserInputCodeException;
-import io.supertokens.passwordless.exceptions.IncorrectUserInputCodeException;
-import io.supertokens.passwordless.exceptions.RestartFlowException;
-import io.supertokens.pluginInterface.RECIPE_ID;
-import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
-import io.supertokens.useridmapping.UserIdType;
-import io.supertokens.webserver.InputParser;
-import io.supertokens.webserver.WebserverAPI;
+import java.util.Objects;
 
 public class ConsumeCodeAPI extends WebserverAPI {
 
@@ -59,6 +57,7 @@ public class ConsumeCodeAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         // Logic based on: https://app.code2flow.com/OFxcbh1FNLXd
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
@@ -83,21 +82,50 @@ public class ConsumeCodeAPI extends WebserverAPI {
         }
 
         try {
-            ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(main, deviceId, deviceIdHash,
-                    userInputCode, linkCode);
+            ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(
+                    this.getTenantIdentifierWithStorageFromRequest(req), main,
+                    deviceId, deviceIdHash,
+                    userInputCode, linkCode,
+                    // From CDI version 4.0 onwards, the email verification will be set
+                    getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0));
+            io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(this.getTenantIdentifierWithStorageFromRequest(req), new AuthRecipeUserInfo[]{consumeCodeResponse.user});
 
-            UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
-                    consumeCodeResponse.user.id, UserIdType.ANY);
-            if (userIdMapping != null) {
-                consumeCodeResponse.user.id = userIdMapping.externalUserId;
-            }
+            ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main, consumeCodeResponse.user.getSupertokensUserId());
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
-            JsonObject userJson = new JsonParser().parse(new Gson().toJson(consumeCodeResponse.user)).getAsJsonObject();
+            JsonObject userJson =
+                    getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? consumeCodeResponse.user.toJson() :
+                            consumeCodeResponse.user.toJsonWithoutAccountLinking();
+
+            if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
+                userJson.remove("tenantIds");
+            }
 
             result.addProperty("createdNewUser", consumeCodeResponse.createdNewUser);
             result.add("user", userJson);
+            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0)) {
+                for (LoginMethod loginMethod : consumeCodeResponse.user.loginMethods) {
+                    if (loginMethod.recipeId.equals(RECIPE_ID.PASSWORDLESS)
+                            && (consumeCodeResponse.email == null || Objects.equals(loginMethod.email, consumeCodeResponse.email))
+                            && (consumeCodeResponse.phoneNumber == null || Objects.equals(loginMethod.phoneNumber, consumeCodeResponse.phoneNumber))) {
+                        result.addProperty("recipeUserId", loginMethod.getSupertokensOrExternalUserId());
+                        break;
+                    }
+                }
+            }
+
+            String factorId;
+            if (linkCode != null) {
+                factorId = "link-";
+            } else {
+                factorId = "otp-";
+            }
+            if (consumeCodeResponse.email != null) {
+                factorId += "email";
+            } else {
+                factorId += "phone";
+            }
 
             super.sendJsonResponse(200, result, resp);
         } catch (RestartFlowException ex) {
@@ -119,8 +147,8 @@ public class ConsumeCodeAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } catch (DeviceIdHashMismatchException ex) {
             throw new ServletException(new BadRequestException("preAuthSessionId and deviceId doesn't match"));
-        } catch (StorageTransactionLogicException | StorageQueryException | NoSuchAlgorithmException
-                | InvalidKeyException e) {
+        } catch (StorageTransactionLogicException | StorageQueryException | NoSuchAlgorithmException |
+                 InvalidKeyException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         } catch (Base64EncodingException ex) {
             throw new ServletException(new BadRequestException("Input encoding error in " + ex.source));

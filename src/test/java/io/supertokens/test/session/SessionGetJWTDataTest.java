@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.session.Session;
+import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -62,7 +63,7 @@ public class SessionGetJWTDataTest {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                userDataInDatabase);
 
         // verify to see payload is proper
         assertEquals(sessionInfo.session.userDataInJWT, userDataInJWT);
@@ -70,7 +71,7 @@ public class SessionGetJWTDataTest {
         // change JWT payload using session handle
         JsonObject newUserDataInJwt = new JsonObject();
         newUserDataInJwt.addProperty("key", "value2");
-        Session.updateSession(process.getProcess(), sessionInfo.session.handle, null, newUserDataInJwt, null);
+        Session.updateSession(process.getProcess(), sessionInfo.session.handle, null, newUserDataInJwt, AccessToken.getLatestVersion());
 
         // check that this change is reflected
 
@@ -99,14 +100,14 @@ public class SessionGetJWTDataTest {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                userDataInDatabase);
 
         // verify to see payload is proper
         assertEquals(sessionInfo.session.userDataInJWT, userDataInJWT);
 
         // change JWT payload to be empty using session handle
         JsonObject emptyUserDataInJwt = new JsonObject();
-        Session.updateSession(process.getProcess(), sessionInfo.session.handle, null, emptyUserDataInJwt, null);
+        Session.updateSession(process.getProcess(), sessionInfo.session.handle, null, emptyUserDataInJwt, AccessToken.getLatestVersion());
 
         // check this is reflected
         assertEquals(Session.getSession(process.getProcess(), sessionInfo.session.handle).userDataInJWT,
@@ -134,13 +135,13 @@ public class SessionGetJWTDataTest {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                userDataInDatabase);
 
         // verify to see payload is proper
         assertEquals(sessionInfo.session.userDataInJWT, userDataInJWT);
 
         // change JWT payload to be null
-        Session.updateSession(process.getProcess(), sessionInfo.session.handle, userDataInDatabase, null, null);
+        Session.updateSession(process.getProcess(), sessionInfo.session.handle, userDataInDatabase, null, AccessToken.getLatestVersion());
 
         // check that jwtData does not change
         assertEquals(Session.getSession(process.getProcess(), sessionInfo.session.handle).userDataInJWT, userDataInJWT);
@@ -168,7 +169,7 @@ public class SessionGetJWTDataTest {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                userDataInDatabase);
 
         // Let it expire
         Thread.sleep(2000);
@@ -202,7 +203,7 @@ public class SessionGetJWTDataTest {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                userDataInDatabase);
 
         // Revoke the session
         String[] sessionHandles = { sessionInfo.session.handle };
@@ -237,7 +238,7 @@ public class SessionGetJWTDataTest {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                userDataInDatabase);
 
         // Wait for access token to expire
         Thread.sleep(1000);

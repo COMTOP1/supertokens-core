@@ -18,8 +18,8 @@ package io.supertokens.test.userRoles.api;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
-import io.supertokens.emailverification.User;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -27,6 +27,7 @@ import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.userroles.UserRoles;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -52,7 +53,7 @@ public class AddUserRoleAPITest {
     @Test
     public void badInputTest() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -66,7 +67,7 @@ public class AddUserRoleAPITest {
             try {
                 HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/role", new JsonObject(), 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "userroles");
+                        SemVer.v2_14.get(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -81,7 +82,7 @@ public class AddUserRoleAPITest {
             try {
                 HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/role", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "userroles");
+                        SemVer.v2_14.get(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -97,7 +98,7 @@ public class AddUserRoleAPITest {
             try {
                 HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/role", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "userroles");
+                        SemVer.v2_14.get(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -111,7 +112,7 @@ public class AddUserRoleAPITest {
             try {
                 HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/role", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "userroles");
+                        SemVer.v2_14.get(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -126,7 +127,7 @@ public class AddUserRoleAPITest {
             try {
                 HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/role", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "userroles");
+                        SemVer.v2_14.get(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -141,7 +142,7 @@ public class AddUserRoleAPITest {
             try {
                 HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/role", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "userroles");
+                        SemVer.v2_14.get(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -155,7 +156,7 @@ public class AddUserRoleAPITest {
 
     @Test
     public void testAddingARoleToAUserTwice() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -164,10 +165,10 @@ public class AddUserRoleAPITest {
             return;
         }
 
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         // create a role
-        String[] role = new String[] { "role" };
+        String[] role = new String[]{"role"};
         String userId = "userId";
         UserRoles.createNewRoleOrModifyItsPermissions(process.main, role[0], null);
 
@@ -179,14 +180,14 @@ public class AddUserRoleAPITest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user/role", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_14ForTests(), "userroles");
+                    SemVer.v2_14.get(), "userroles");
 
             assertEquals(2, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertFalse(response.get("didUserAlreadyHaveRole").getAsBoolean());
 
             // check that the user actually has only that role
-            String[] userRoles = storage.getRolesForUser(userId);
+            String[] userRoles = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
             Utils.checkThatArraysAreEqual(role, userRoles);
         }
 
@@ -199,14 +200,14 @@ public class AddUserRoleAPITest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user/role", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_14ForTests(), "userroles");
+                    SemVer.v2_14.get(), "userroles");
 
             assertEquals(2, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertTrue(response.get("didUserAlreadyHaveRole").getAsBoolean());
 
             // check the users roles havent changed
-            String[] userRoles = storage.getRolesForUser(userId);
+            String[] userRoles = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
             Utils.checkThatArraysAreEqual(role, userRoles);
         }
 
@@ -216,7 +217,7 @@ public class AddUserRoleAPITest {
 
     @Test
     public void testAddingARoleToAUserByCallingAddUserRoleAPI() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -225,10 +226,10 @@ public class AddUserRoleAPITest {
             return;
         }
 
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         // create a role
-        String[] role = new String[] { "role" };
+        String[] role = new String[]{"role"};
         String userId = "userId";
         UserRoles.createNewRoleOrModifyItsPermissions(process.main, role[0], null);
 
@@ -239,14 +240,14 @@ public class AddUserRoleAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user/role", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_14ForTests(), "userroles");
+                SemVer.v2_14.get(), "userroles");
 
         assertEquals(2, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
         assertFalse(response.get("didUserAlreadyHaveRole").getAsBoolean());
 
         // check that the user actually has only that role
-        String[] userRoles = storage.getRolesForUser(userId);
+        String[] userRoles = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
         Utils.checkThatArraysAreEqual(role, userRoles);
 
         process.kill();
@@ -255,7 +256,7 @@ public class AddUserRoleAPITest {
 
     @Test
     public void testAddingAnUnknownRoleToAUser() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -272,14 +273,14 @@ public class AddUserRoleAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user/role", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_14ForTests(), "userroles");
+                SemVer.v2_14.get(), "userroles");
 
         assertEquals("UNKNOWN_ROLE_ERROR", response.get("status").getAsString());
         assertEquals(1, response.entrySet().size());
 
         // check that user has no role associated with them
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
-        String[] userRoles = storage.getRolesForUser(userId);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
+        String[] userRoles = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
         assertEquals(0, userRoles.length);
 
         process.kill();

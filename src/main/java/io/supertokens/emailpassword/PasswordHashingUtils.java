@@ -16,11 +16,13 @@
 
 package io.supertokens.emailpassword;
 
+import com.lambdaworks.crypto.SCrypt;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
-import com.lambdaworks.crypto.SCrypt;
 import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import org.apache.tomcat.util.codec.binary.Base64;
 
 import javax.annotation.Nullable;
@@ -28,7 +30,8 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
-import java.security.*;
+import java.security.GeneralSecurityException;
+import java.security.Key;
 import java.util.Objects;
 
 public class PasswordHashingUtils {
@@ -45,13 +48,16 @@ public class PasswordHashingUtils {
         return hash;
     }
 
-    public static void assertSuperTokensSupportInputPasswordHashFormat(Main main, String passwordHash,
-            @Nullable CoreConfig.PASSWORD_HASHING_ALG hashingAlgorithm)
-            throws UnsupportedPasswordHashingFormatException {
+    public static void assertSuperTokensSupportInputPasswordHashFormat(AppIdentifier appIdentifier,
+                                                                       Main main, String passwordHash,
+                                                                       @Nullable
+                                                                               CoreConfig.PASSWORD_HASHING_ALG hashingAlgorithm)
+            throws UnsupportedPasswordHashingFormatException, TenantOrAppNotFoundException {
         if (hashingAlgorithm == null) {
             if (ParsedFirebaseSCryptResponse.fromHashString(passwordHash) != null) {
                 // since input hash is in firebase scrypt format we check if firebase scrypt signer key is set
-                Config.getConfig(main).getFirebase_password_hashing_signer_key();
+                Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main)
+                        .getFirebase_password_hashing_signer_key();
                 return;
             }
 
@@ -75,7 +81,8 @@ public class PasswordHashingUtils {
 
         if (hashingAlgorithm.equals(CoreConfig.PASSWORD_HASHING_ALG.FIREBASE_SCRYPT)) {
             // since input hash is in firebase scrypt format we check if firebase scrypt signer key is set
-            Config.getConfig(main).getFirebase_password_hashing_signer_key();
+            Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main)
+                    .getFirebase_password_hashing_signer_key();
             if (ParsedFirebaseSCryptResponse.fromHashString(passwordHash) == null) {
                 throw new UnsupportedPasswordHashingFormatException(
                         "Password hash is in invalid Firebase SCrypt format");
@@ -95,7 +102,7 @@ public class PasswordHashingUtils {
     }
 
     public static boolean verifyFirebaseSCryptPasswordHash(String plainTextPassword, String passwordHash,
-            String base64_signer_key) {
+                                                           String base64_signer_key) {
 
         // follows the logic mentioned here
         // https://github.com/SmartMoveSystems/firebase-scrypt-java/blob/master/src/main/java/com/smartmovesystems/hashcheck/FirebaseScrypt.java
@@ -110,8 +117,10 @@ public class PasswordHashingUtils {
         int p = 1;
 
         // concatenating decoded salt + separator
-        byte[] decodedSaltBytes = Base64.decodeBase64(response.salt.getBytes(StandardCharsets.US_ASCII));
-        byte[] decodedSaltSepBytes = Base64.decodeBase64(response.saltSeparator.getBytes(StandardCharsets.US_ASCII));
+        byte[] byteArrTemp = response.salt.getBytes(StandardCharsets.US_ASCII);
+        byte[] decodedSaltBytes = Base64.decodeBase64(byteArrTemp, 0, byteArrTemp.length);
+        byteArrTemp = response.saltSeparator.getBytes(StandardCharsets.US_ASCII);
+        byte[] decodedSaltSepBytes = Base64.decodeBase64(byteArrTemp, 0, byteArrTemp.length);
 
         byte[] saltConcat = new byte[decodedSaltBytes.length + decodedSaltSepBytes.length];
         System.arraycopy(decodedSaltBytes, 0, saltConcat, 0, decodedSaltBytes.length);
@@ -126,7 +135,8 @@ public class PasswordHashingUtils {
             return false;
         }
         // encrypting with aes
-        byte[] signerBytes = Base64.decodeBase64(base64_signer_key.getBytes(StandardCharsets.US_ASCII));
+        byteArrTemp = base64_signer_key.getBytes(StandardCharsets.US_ASCII);
+        byte[] signerBytes = Base64.decodeBase64(byteArrTemp, 0, byteArrTemp.length);
 
         try {
             String CIPHER = "AES/CTR/NoPadding";
@@ -135,7 +145,7 @@ public class PasswordHashingUtils {
             Cipher c = Cipher.getInstance(CIPHER);
             c.init(Cipher.ENCRYPT_MODE, key, ivSpec);
             byte[] encryptedPasswordHash = c.doFinal(signerBytes);
-            return new String(Objects.requireNonNull(Base64.encodeBase64(encryptedPasswordHash)))
+            return Objects.requireNonNull(Base64.encodeBase64String(encryptedPasswordHash))
                     .equals(response.passwordHash);
         } catch (Exception e) {
             return false;

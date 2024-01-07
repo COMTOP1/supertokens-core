@@ -20,21 +20,22 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.passwordless.UserInfo;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.passwordless.PasswordlessStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
-
 import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class PasswordlessUserPutAPITest2_11 {
     @Rule
@@ -52,7 +53,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
     @Test
     public void testBadInput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -61,24 +62,27 @@ public class PasswordlessUserPutAPITest2_11 {
             return;
         }
 
-        String userId = "userId";
+        String userId = "6347c997-4cc9-4f95-94c9-b96e2c65aefc";
 
         String email = "test@example.com";
         String email2 = "test2@example.com";
         String phoneNumber = "+442071838750";
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
-        storage.createUser(new UserInfo(userId, email, null, System.currentTimeMillis()));
-        storage.createUser(new UserInfo("userId2", email2, null, System.currentTimeMillis()));
-        storage.createUser(new UserInfo("userId3", null, phoneNumber, System.currentTimeMillis()));
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
+        storage.createUser(new TenantIdentifier(null, null, null),
+                userId, email, null, System.currentTimeMillis());
+        storage.createUser(new TenantIdentifier(null, null, null),
+                "userId2", email2, null, System.currentTimeMillis());
+        storage.createUser(new TenantIdentifier(null, null, null),
+                "userId3", null, phoneNumber, System.currentTimeMillis());
 
         {
             JsonObject updateUserRequestBody = new JsonObject();
             Exception ex = null;
             try {
-                JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_10ForTests(), "passwordless");
+                        SemVer.v2_10.get(), "passwordless");
             } catch (Exception e) {
                 ex = e;
             }
@@ -98,7 +102,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+                    SemVer.v2_10.get(), "passwordless");
 
             assertEquals("UNKNOWN_USER_ID_ERROR", response.get("status").getAsString());
         }
@@ -110,7 +114,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+                    SemVer.v2_10.get(), "passwordless");
 
             assertEquals("EMAIL_ALREADY_EXISTS_ERROR", response.get("status").getAsString());
         }
@@ -122,7 +126,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+                    SemVer.v2_10.get(), "passwordless");
 
             assertEquals("PHONE_NUMBER_ALREADY_EXISTS_ERROR", response.get("status").getAsString());
         }
@@ -133,7 +137,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
     @Test
     public void testEmailToPhone() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -142,12 +146,13 @@ public class PasswordlessUserPutAPITest2_11 {
             return;
         }
 
-        String userId = "userId";
+        String userId = "6347c997-4cc9-4f95-94c9-b96e2c65aefc";
         String phoneNumber = "+442071838750";
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         String email = "email";
-        storage.createUser(new UserInfo(userId, email, null, System.currentTimeMillis()));
+        storage.createUser(new TenantIdentifier(null, null, null),
+                userId, email, null, System.currentTimeMillis());
 
         JsonObject updateUserRequestBody = new JsonObject();
         updateUserRequestBody.addProperty("userId", userId);
@@ -156,24 +161,24 @@ public class PasswordlessUserPutAPITest2_11 {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_10ForTests(), "passwordless");
+                SemVer.v2_10.get(), "passwordless");
 
         assertEquals("OK", response.get("status").getAsString());
 
-        assertNull(storage.getUserByEmail(email));
-        assertNotNull(storage.getUserByPhoneNumber(phoneNumber));
+        assert (storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), email).length == 0);
+        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber).length == 1);
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     /**
      * remove phoneNumber set email -> OK
-     * 
+     *
      * @throws Exception
      */
     @Test
     public void testPhoneToEmail() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -182,38 +187,39 @@ public class PasswordlessUserPutAPITest2_11 {
             return;
         }
 
-        String userId = "userId";
+        String userId = "6347c997-4cc9-4f95-94c9-b96e2c65aefc";
         String phoneNumber = "+442071838750";
         String email = "email";
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
-        storage.createUser(new UserInfo(userId, null, phoneNumber, System.currentTimeMillis()));
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
+        storage.createUser(new TenantIdentifier(null, null, null),
+                userId, null, phoneNumber, System.currentTimeMillis());
 
         JsonObject updateUserRequestBody = new JsonObject();
         updateUserRequestBody.addProperty("userId", userId);
         updateUserRequestBody.add("phoneNumber", JsonNull.INSTANCE);
-        updateUserRequestBody.addProperty("email", email);
+        updateUserRequestBody.addProperty("email", email.toUpperCase());
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_10ForTests(), "passwordless");
+                SemVer.v2_10.get(), "passwordless");
 
         assertEquals("OK", response.get("status").getAsString());
 
-        assertNotNull(storage.getUserByEmail(email));
-        assertNull(storage.getUserByPhoneNumber(phoneNumber));
+        assert (storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), email).length == 1);
+        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber).length == 0);
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     /**
      * update both email and phoneNumber -> OK
-     * 
+     *
      * @throws Exception
      */
     @Test
     public void testPhoneAndEmail() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -222,14 +228,15 @@ public class PasswordlessUserPutAPITest2_11 {
             return;
         }
 
-        String userId = "userId";
+        String userId = "6347c997-4cc9-4f95-94c9-b96e2c65aefc";
         String phoneNumber = "+442071838750";
         String email = "email";
         String updatedPhoneNumber = "+442071838751";
         String updatedEmail = "test@example.com";
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
-        storage.createUser(new UserInfo(userId, email, phoneNumber, System.currentTimeMillis()));
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
+        storage.createUser(new TenantIdentifier(null, null, null),
+                userId, email, phoneNumber, System.currentTimeMillis());
 
         JsonObject updateUserRequestBody = new JsonObject();
         updateUserRequestBody.addProperty("userId", userId);
@@ -238,15 +245,17 @@ public class PasswordlessUserPutAPITest2_11 {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_10ForTests(), "passwordless");
+                SemVer.v2_10.get(), "passwordless");
 
         assertEquals("OK", response.get("status").getAsString());
 
-        assertNull(storage.getUserByEmail(email));
-        assertNull(storage.getUserByPhoneNumber(phoneNumber));
+        assert (storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), email).length == 0);
+        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber).length == 0);
 
-        assertNotNull(storage.getUserByEmail(updatedEmail));
-        assertNotNull(storage.getUserByPhoneNumber(updatedPhoneNumber));
+        assert (storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), updatedEmail).length == 1);
+        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null),
+                updatedPhoneNumber).length ==
+                1);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -254,12 +263,12 @@ public class PasswordlessUserPutAPITest2_11 {
 
     /**
      * remove both phoneNumber and email -> BadRequest
-     * 
+     *
      * @throws Exception
      */
     @Test
     public void clearEmailAndPhone() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -268,12 +277,13 @@ public class PasswordlessUserPutAPITest2_11 {
             return;
         }
 
-        String userId = "userId";
+        String userId = "6347c997-4cc9-4f95-94c9-b96e2c65aefc";
         String phoneNumber = "+442071838750";
         String email = "email";
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
-        storage.createUser(new UserInfo(userId, email, phoneNumber, System.currentTimeMillis()));
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
+        storage.createUser(new TenantIdentifier(null, null, null),
+                userId, email, phoneNumber, System.currentTimeMillis());
 
         JsonObject updateUserRequestBody = new JsonObject();
         updateUserRequestBody.addProperty("userId", userId);
@@ -282,9 +292,9 @@ public class PasswordlessUserPutAPITest2_11 {
 
         Exception ex = null;
         try {
-            JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+            HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+                    SemVer.v2_10.get(), "passwordless");
 
         } catch (Exception e) {
             ex = e;
@@ -302,12 +312,12 @@ public class PasswordlessUserPutAPITest2_11 {
 
     /**
      * clear email of email only user -> BadRequest
-     * 
+     *
      * @throws Exception
      */
     @Test
     public void clearEmailOfEmailOnlyUser() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -316,11 +326,12 @@ public class PasswordlessUserPutAPITest2_11 {
             return;
         }
 
-        String userId = "userId";
+        String userId = "6347c997-4cc9-4f95-94c9-b96e2c65aefc";
         String email = "email";
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
-        storage.createUser(new UserInfo(userId, email, null, System.currentTimeMillis()));
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
+        storage.createUser(new TenantIdentifier(null, null, null),
+                userId, email, null, System.currentTimeMillis());
 
         JsonObject updateUserRequestBody = new JsonObject();
         updateUserRequestBody.addProperty("userId", userId);
@@ -328,9 +339,9 @@ public class PasswordlessUserPutAPITest2_11 {
 
         Exception ex = null;
         try {
-            JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+            HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+                    SemVer.v2_10.get(), "passwordless");
 
         } catch (Exception e) {
             ex = e;
@@ -349,12 +360,12 @@ public class PasswordlessUserPutAPITest2_11 {
     /**
      * clear phoneNumber of phoneNumber only user -> BadRequest
      * TODO: error messages could be more clearer from the API
-     * 
+     *
      * @throws Exception
      */
     @Test
     public void clearPhoneNUmberOfPhoneNumberOnlyUser() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -363,11 +374,12 @@ public class PasswordlessUserPutAPITest2_11 {
             return;
         }
 
-        String userId = "userId";
+        String userId = "6347c997-4cc9-4f95-94c9-b96e2c65aefc";
         String phoneNumber = "+91898989898";
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
-        storage.createUser(new UserInfo(userId, null, phoneNumber, System.currentTimeMillis()));
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
+        storage.createUser(new TenantIdentifier(null, null, null),
+                userId, null, phoneNumber, System.currentTimeMillis());
 
         JsonObject updateUserRequestBody = new JsonObject();
         updateUserRequestBody.addProperty("userId", userId);
@@ -375,9 +387,9 @@ public class PasswordlessUserPutAPITest2_11 {
 
         Exception ex = null;
         try {
-            JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+            HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+                    SemVer.v2_10.get(), "passwordless");
 
         } catch (Exception e) {
             ex = e;
@@ -395,12 +407,12 @@ public class PasswordlessUserPutAPITest2_11 {
 
     /**
      * clear email -> OK
-     * 
+     *
      * @throws Exception
      */
     @Test
     public void clearEmail() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -409,12 +421,13 @@ public class PasswordlessUserPutAPITest2_11 {
             return;
         }
 
-        String userId = "userId";
+        String userId = "6347c997-4cc9-4f95-94c9-b96e2c65aefc";
         String email = "email";
         String phoneNumber = "+9189898989";
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
-        storage.createUser(new UserInfo(userId, email, phoneNumber, System.currentTimeMillis()));
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
+        storage.createUser(new TenantIdentifier(null, null, null),
+                userId, email, phoneNumber, System.currentTimeMillis());
 
         JsonObject updateUserRequestBody = new JsonObject();
         updateUserRequestBody.addProperty("userId", userId);
@@ -422,12 +435,12 @@ public class PasswordlessUserPutAPITest2_11 {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_10ForTests(), "passwordless");
+                SemVer.v2_10.get(), "passwordless");
 
         assertEquals("OK", response.get("status").getAsString());
 
-        assertNull(storage.getUserByEmail(email));
-        assertNotNull(storage.getUserByPhoneNumber(phoneNumber));
+        assert (storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), email).length == 0);
+        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber).length == 1);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -435,12 +448,12 @@ public class PasswordlessUserPutAPITest2_11 {
 
     /**
      * clear phoneNumber -> OK
-     * 
+     *
      * @throws Exception
      */
     @Test
     public void clearPhone() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -449,12 +462,13 @@ public class PasswordlessUserPutAPITest2_11 {
             return;
         }
 
-        String userId = "userId";
+        String userId = "6347c997-4cc9-4f95-94c9-b96e2c65aefc";
         String email = "email";
         String phoneNumber = "+9189898989";
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
-        storage.createUser(new UserInfo(userId, email, phoneNumber, System.currentTimeMillis()));
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
+        storage.createUser(new TenantIdentifier(null, null, null),
+                userId, email, phoneNumber, System.currentTimeMillis());
 
         JsonObject updateUserRequestBody = new JsonObject();
         updateUserRequestBody.addProperty("userId", userId);
@@ -462,12 +476,12 @@ public class PasswordlessUserPutAPITest2_11 {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_10ForTests(), "passwordless");
+                SemVer.v2_10.get(), "passwordless");
 
         assertEquals("OK", response.get("status").getAsString());
 
-        assertNotNull(storage.getUserByEmail(email));
-        assertNull(storage.getUserByPhoneNumber(phoneNumber));
+        assert (storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), email).length == 1);
+        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber).length == 0);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -475,12 +489,12 @@ public class PasswordlessUserPutAPITest2_11 {
 
     /**
      * update neither -> OK
-     * 
+     *
      * @throws Exception
      */
     @Test
     public void updateNothing() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -489,24 +503,25 @@ public class PasswordlessUserPutAPITest2_11 {
             return;
         }
 
-        String userId = "userId";
+        String userId = "6347c997-4cc9-4f95-94c9-b96e2c65aefc";
         String email = "email";
         String phoneNumber = "+9189898989";
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
-        storage.createUser(new UserInfo(userId, email, phoneNumber, System.currentTimeMillis()));
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
+        storage.createUser(new TenantIdentifier(null, null, null),
+                userId, email, phoneNumber, System.currentTimeMillis());
 
         JsonObject updateUserRequestBody = new JsonObject();
         updateUserRequestBody.addProperty("userId", userId);
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_10ForTests(), "passwordless");
+                SemVer.v2_10.get(), "passwordless");
 
         assertEquals("OK", response.get("status").getAsString());
 
-        assertNotNull(storage.getUserByEmail(email));
-        assertNotNull(storage.getUserByPhoneNumber(phoneNumber));
+        assert (storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), email).length == 1);
+        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber).length == 1);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -514,12 +529,12 @@ public class PasswordlessUserPutAPITest2_11 {
 
     /**
      * update email only -> OK
-     * 
+     *
      * @throws Exception
      */
     @Test
     public void testUpdateEmail() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -528,13 +543,13 @@ public class PasswordlessUserPutAPITest2_11 {
             return;
         }
 
-        String userId = "userId";
-        String phoneNumber = "+442071838750";
+        String userId = "6347c997-4cc9-4f95-94c9-b96e2c65aefc";
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         String email = "email";
         String updated_email = "test@example.com";
-        storage.createUser(new UserInfo(userId, email, null, System.currentTimeMillis()));
+        storage.createUser(new TenantIdentifier(null, null, null),
+                userId, email, null, System.currentTimeMillis());
 
         JsonObject updateUserRequestBody = new JsonObject();
         updateUserRequestBody.addProperty("userId", userId);
@@ -542,12 +557,12 @@ public class PasswordlessUserPutAPITest2_11 {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_10ForTests(), "passwordless");
+                SemVer.v2_10.get(), "passwordless");
 
         assertEquals("OK", response.get("status").getAsString());
 
-        assertNotNull(storage.getUserByEmail(updated_email));
-        assertNull(storage.getUserByEmail(email));
+        assert (storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), updated_email).length == 1);
+        assert (storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), email).length == 0);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -555,12 +570,12 @@ public class PasswordlessUserPutAPITest2_11 {
 
     /**
      * update phoneNumber only -> OK
-     * 
+     *
      * @throws Exception
      */
     @Test
     public void testUpdatePhoneNumber() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -569,12 +584,13 @@ public class PasswordlessUserPutAPITest2_11 {
             return;
         }
 
-        String userId = "userId";
+        String userId = "6347c997-4cc9-4f95-94c9-b96e2c65aefc";
         String phoneNumber = "+442071838750";
         String updatedPhoneNumber = "+442071838751";
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
-        storage.createUser(new UserInfo(userId, null, phoneNumber, System.currentTimeMillis()));
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
+        storage.createUser(new TenantIdentifier(null, null, null),
+                userId, null, phoneNumber, System.currentTimeMillis());
 
         JsonObject updateUserRequestBody = new JsonObject();
         updateUserRequestBody.addProperty("userId", userId);
@@ -582,12 +598,13 @@ public class PasswordlessUserPutAPITest2_11 {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_10ForTests(), "passwordless");
+                SemVer.v2_10.get(), "passwordless");
 
         assertEquals("OK", response.get("status").getAsString());
 
-        assertNotNull(storage.getUserByPhoneNumber(updatedPhoneNumber));
-        assertNull(storage.getUserByPhoneNumber(phoneNumber));
+        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null),
+                updatedPhoneNumber).length == 1);
+        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber).length == 0);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

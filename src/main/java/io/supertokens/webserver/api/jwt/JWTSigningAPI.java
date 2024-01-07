@@ -23,12 +23,14 @@ import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
@@ -48,6 +50,9 @@ public class JWTSigningAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific
+        SemVer version = super.getVersionFromRequest(req);
+
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String algorithm = InputParser.parseStringOrThrowError(input, "algorithm", false);
         assert algorithm != null;
@@ -65,9 +70,17 @@ public class JWTSigningAPI extends WebserverAPI {
                     new WebserverAPI.BadRequestException("validity must be greater than or equal to 0"));
         }
 
+        boolean useDynamicKey = false;
+        if (version.greaterThanOrEqualTo(SemVer.v2_21)) {
+            Boolean useStaticKeyInput = InputParser.parseBooleanOrThrowError(input, "useStaticSigningKey", true);
+            // useStaticKeyInput defaults to true, so we check if it has been explicitly set to false
+            useDynamicKey = Boolean.FALSE.equals(useStaticKeyInput);
+        }
+
         try {
-            String jwt = JWTSigningFunctions.createJWTToken(main, algorithm.toUpperCase(), payload, jwksDomain,
-                    validity);
+            String jwt = JWTSigningFunctions.createJWTToken(this.getAppIdentifierWithStorage(req), main,
+                    algorithm.toUpperCase(), payload, jwksDomain,
+                    validity, useDynamicKey);
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "OK");
             reply.addProperty("jwt", jwt);
@@ -76,8 +89,7 @@ public class JWTSigningAPI extends WebserverAPI {
             JsonObject reply = new JsonObject();
             reply.addProperty("status", UNSUPPORTED_ALGORITHM_ERROR_STATUS);
             super.sendJsonResponse(200, reply, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException
-                | InvalidKeySpecException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException | InvalidKeySpecException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

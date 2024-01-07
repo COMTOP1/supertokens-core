@@ -25,6 +25,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.WebserverAPI;
 import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.junit.rules.TestRule;
@@ -38,8 +39,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public abstract class Utils extends Mockito {
 
@@ -74,48 +74,8 @@ public abstract class Utils extends Mockito {
         }
     }
 
-    public static String getCdiVersion2_7ForTests() {
-        return "2.7";
-    }
-
-    public static String getCdiVersion2_8ForTests() {
-        return "2.8";
-    }
-
-    public static String getCdiVersion2_9ForTests() {
-        return "2.9";
-    }
-
-    public static String getCdiVersion2_10ForTests() {
-        return "2.10";
-    }
-
-    public static String getCdiVersion2_11ForTests() {
-        return "2.11";
-    }
-
-    public static String getCdiVersion2_12ForTests() {
-        return "2.12";
-    }
-
-    public static String getCdiVersion2_13ForTests() {
-        return "2.13";
-    }
-
-    public static String getCdiVersion2_14ForTests() {
-        return "2.14";
-    }
-
-    public static String getCdiVersion2_15ForTests() {
-        return "2.15";
-    }
-
-    public static String getCdiVersion2_16ForTests() {
-        return "2.16";
-    }
-
-    public static String getCdiVersionLatestForTests() {
-        return WebserverAPI.getLatestCDIVersion();
+    public static String getCdiVersionStringLatestForTests() {
+        return WebserverAPI.getLatestCDIVersion().get();
     }
 
     public static void reset() {
@@ -209,31 +169,43 @@ public abstract class Utils extends Mockito {
     }
 
     public static JsonObject signUpRequest_2_4(TestingProcessManager.TestingProcess process, String email,
-            String password) throws IOException, HttpResponseException {
+                                               String password) throws IOException, HttpResponseException {
 
         JsonObject signUpRequestBody = new JsonObject();
         signUpRequestBody.addProperty("email", email);
         signUpRequestBody.addProperty("password", password);
 
         return HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/signup", signUpRequestBody, 1000, 1000, null, getCdiVersion2_7ForTests(),
+                "http://localhost:3567/recipe/signup", signUpRequestBody, 1000, 1000, null, SemVer.v2_7.get(),
                 "emailpassword");
     }
 
     public static JsonObject signUpRequest_2_5(TestingProcessManager.TestingProcess process, String email,
-            String password) throws IOException, HttpResponseException {
+                                               String password) throws IOException, HttpResponseException {
 
         JsonObject signUpRequestBody = new JsonObject();
         signUpRequestBody.addProperty("email", email);
         signUpRequestBody.addProperty("password", password);
 
         return HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/signup", signUpRequestBody, 1000, 1000, null, getCdiVersion2_7ForTests(),
+                "http://localhost:3567/recipe/signup", signUpRequestBody, 1000, 1000, null, SemVer.v2_7.get(),
+                "emailpassword");
+    }
+
+    public static JsonObject signUpRequest_3_0(TestingProcessManager.TestingProcess process, String email,
+                                               String password) throws IOException, HttpResponseException {
+
+        JsonObject signUpRequestBody = new JsonObject();
+        signUpRequestBody.addProperty("email", email);
+        signUpRequestBody.addProperty("password", password);
+
+        return HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/signup", signUpRequestBody, 1000, 1000, null, SemVer.v3_0.get(),
                 "emailpassword");
     }
 
     public static JsonObject signInUpRequest_2_7(TestingProcessManager.TestingProcess process, String email,
-            boolean isVerified, String thirdPartyId, String thirdPartyUserId)
+                                                 boolean isVerified, String thirdPartyId, String thirdPartyUserId)
             throws IOException, HttpResponseException {
 
         JsonObject emailObject = new JsonObject();
@@ -247,11 +219,12 @@ public abstract class Utils extends Mockito {
 
         return HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/signinup", signUpRequestBody, 1000, 1000, null,
-                getCdiVersion2_7ForTests(), "thirdparty");
+                SemVer.v2_7.get(), "thirdparty");
     }
 
     public static JsonObject signInUpRequest_2_8(TestingProcessManager.TestingProcess process, String email,
-            String thirdPartyId, String thirdPartyUserId) throws IOException, HttpResponseException {
+                                                 String thirdPartyId, String thirdPartyUserId)
+            throws IOException, HttpResponseException {
 
         JsonObject emailObject = new JsonObject();
         emailObject.addProperty("id", email);
@@ -263,7 +236,7 @@ public abstract class Utils extends Mockito {
 
         return HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/signinup", signUpRequestBody, 1000, 1000, null,
-                getCdiVersion2_8ForTests(), "thirdparty");
+                SemVer.v2_8.get(), "thirdparty");
     }
 
     public static void checkThatArraysAreEqual(String[] arr1, String[] arr2) {
@@ -289,5 +262,11 @@ public abstract class Utils extends Mockito {
         UserIdMapping retrievedMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
                 userIdMapping.superTokensUserId, UserIdType.SUPERTOKENS);
         assertEquals(userIdMapping, retrievedMapping);
+    }
+
+    public static <T> void assertArrayEqualsIgnoreOrder(T[] array1, T[] array2) {
+        assertTrue(
+                array1.length == array2.length && Arrays.asList(array1).containsAll(Arrays.asList(array2))
+                        && Arrays.asList(array2).containsAll(Arrays.asList(array1)));
     }
 }

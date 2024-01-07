@@ -25,7 +25,7 @@ import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -60,7 +60,7 @@ public class PasswordHashingTest {
 
     @Test
     public void importUserWithFireBaseSCrypt() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("firebase_password_hashing_signer_key",
                 "gRhC3eDeQOdyEn4bMd9c6kxguWVmcIVq/SKa0JDPFeM6TcEevkaW56sIWfx88OHbJKnCXdWscZx0l2WbCJ1wbg==");
@@ -88,9 +88,9 @@ public class PasswordHashingTest {
                 CoreConfig.PASSWORD_HASHING_ALG.FIREBASE_SCRYPT);
 
         // try signing in
-        UserInfo user = EmailPassword.signIn(process.main, email, password);
-        assertEquals(user.email, email);
-        assertEquals(user.passwordHash, combinedPasswordHash);
+        AuthRecipeUserInfo user = EmailPassword.signIn(process.main, email, password);
+        assertEquals(user.loginMethods[0].email, email);
+        assertEquals(user.loginMethods[0].passwordHash, combinedPasswordHash);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -98,7 +98,7 @@ public class PasswordHashingTest {
 
     @Test
     public void hashAndVerifyWithBcrypt() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -127,7 +127,7 @@ public class PasswordHashingTest {
 
     @Test
     public void hashAndVerifyWithArgon() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("password_hashing_alg", "ARGON2");
 
@@ -158,7 +158,7 @@ public class PasswordHashingTest {
 
     @Test
     public void hashAndVerifyWithBcryptChangeToArgon() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         String hash = "";
 
         {
@@ -196,7 +196,7 @@ public class PasswordHashingTest {
 
     @Test
     public void hashAndVerifyWithArgonChangeToBcrypt() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         String hash = "";
 
         {
@@ -235,7 +235,7 @@ public class PasswordHashingTest {
 
     @Test
     public void defaultConfigs() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -260,7 +260,7 @@ public class PasswordHashingTest {
     @Test
     public void invalidConfigArgonButUsingBcryptShouldAllowStartingServer() throws Exception {
         {
-            String[] args = { "../" };
+            String[] args = {"../"};
             Utils.setValueInConfig("argon2_memory_kb", "-1");
             Utils.setValueInConfig("argon2_parallelism", "-1");
             Utils.setValueInConfig("argon2_iterations", "-1");
@@ -284,7 +284,7 @@ public class PasswordHashingTest {
     @Test
     public void lowercaseConfig() throws Exception {
         {
-            String[] args = { "../" };
+            String[] args = {"../"};
             Utils.setValueInConfig("password_hashing_alg", "argon2");
 
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -299,7 +299,7 @@ public class PasswordHashingTest {
         Utils.reset();
 
         {
-            String[] args = { "../" };
+            String[] args = {"../"};
             Utils.setValueInConfig("password_hashing_alg", "bcrypt");
 
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -315,13 +315,14 @@ public class PasswordHashingTest {
     @Test
     public void invalidConfig() throws Exception {
         {
-            String[] args = { "../" };
+            String[] args = {"../"};
             Utils.setValueInConfig("password_hashing_alg", "RANDOM");
 
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
             assertNotNull(e);
-            assertEquals(e.exception.getMessage(), "'password_hashing_alg' must be one of 'ARGON2' or 'BCRYPT'");
+            assertEquals(e.exception.getCause().getMessage(),
+                    "'password_hashing_alg' must be one of 'ARGON2' or 'BCRYPT'");
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -330,14 +331,14 @@ public class PasswordHashingTest {
         Utils.reset();
 
         {
-            String[] args = { "../" };
+            String[] args = {"../"};
             Utils.setValueInConfig("argon2_iterations", "-1");
             Utils.setValueInConfig("password_hashing_alg", "argon2");
 
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
             assertNotNull(e);
-            assertEquals(e.exception.getMessage(), "'argon2_iterations' must be >= 1");
+            assertEquals(e.exception.getCause().getMessage(), "'argon2_iterations' must be >= 1");
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -346,14 +347,14 @@ public class PasswordHashingTest {
         Utils.reset();
 
         {
-            String[] args = { "../" };
+            String[] args = {"../"};
             Utils.setValueInConfig("argon2_parallelism", "-1");
             Utils.setValueInConfig("password_hashing_alg", "ARGON2");
 
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
             assertNotNull(e);
-            assertEquals(e.exception.getMessage(), "'argon2_parallelism' must be >= 1");
+            assertEquals(e.exception.getCause().getMessage(), "'argon2_parallelism' must be >= 1");
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -362,14 +363,14 @@ public class PasswordHashingTest {
         Utils.reset();
 
         {
-            String[] args = { "../" };
+            String[] args = {"../"};
             Utils.setValueInConfig("argon2_memory_kb", "-1");
             Utils.setValueInConfig("password_hashing_alg", "ARGON2");
 
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
             assertNotNull(e);
-            assertEquals(e.exception.getMessage(), "'argon2_memory_kb' must be >= 1");
+            assertEquals(e.exception.getCause().getMessage(), "'argon2_memory_kb' must be >= 1");
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -378,14 +379,14 @@ public class PasswordHashingTest {
         Utils.reset();
 
         {
-            String[] args = { "../" };
+            String[] args = {"../"};
             Utils.setValueInConfig("argon2_hashing_pool_size", "-1");
             Utils.setValueInConfig("password_hashing_alg", "argon2");
 
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
             assertNotNull(e);
-            assertEquals(e.exception.getMessage(), "'argon2_hashing_pool_size' must be >= 1");
+            assertEquals(e.exception.getCause().getMessage(), "'argon2_hashing_pool_size' must be >= 1");
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -394,14 +395,15 @@ public class PasswordHashingTest {
         Utils.reset();
 
         {
-            String[] args = { "../" };
+            String[] args = {"../"};
             Utils.setValueInConfig("argon2_hashing_pool_size", "100");
             Utils.setValueInConfig("password_hashing_alg", "ARGON2");
 
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
             assertNotNull(e);
-            assertEquals(e.exception.getMessage(), "'argon2_hashing_pool_size' must be <= 'max_server_pool_size'");
+            assertEquals(e.exception.getCause().getMessage(),
+                    "'argon2_hashing_pool_size' must be <= 'max_server_pool_size'");
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -410,14 +412,14 @@ public class PasswordHashingTest {
         Utils.reset();
 
         {
-            String[] args = { "../" };
+            String[] args = {"../"};
             Utils.setValueInConfig("bcrypt_log_rounds", "-1");
             Utils.setValueInConfig("password_hashing_alg", "BCRYPT");
 
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
             assertNotNull(e);
-            assertEquals(e.exception.getMessage(), "'bcrypt_log_rounds' must be >= 1");
+            assertEquals(e.exception.getCause().getMessage(), "'bcrypt_log_rounds' must be >= 1");
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -426,7 +428,7 @@ public class PasswordHashingTest {
 
     @Test
     public void hashAndVerifyArgon2HashWithDifferentConfigs() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         String hash = "";
         Utils.setValueInConfig("password_hashing_alg", "ARGON2");
 
@@ -471,7 +473,7 @@ public class PasswordHashingTest {
 
     @Test
     public void hashAndVerifyBcryptHashWithDifferentConfigs() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         String hash = "";
 
         {
@@ -511,7 +513,7 @@ public class PasswordHashingTest {
 
     @Test
     public void hashAndVerifyWithBcryptChangeToArgonPasswordWithResetFlow() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -520,14 +522,14 @@ public class PasswordHashingTest {
             return;
         }
 
-        UserInfo user = EmailPassword.signUp(process.getProcess(), "t@example.com", "somePass");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "t@example.com", "somePass");
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_BCRYPT));
         ProcessState.getInstance(process.getProcess()).clear();
 
         Config.getConfig(process.getProcess()).setPasswordHashingAlg(CoreConfig.PASSWORD_HASHING_ALG.ARGON2);
 
-        String token = EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
+        String token = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getSupertokensUserId());
         EmailPassword.resetPassword(process.getProcess(), token, "somePass2");
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON));
@@ -541,7 +543,7 @@ public class PasswordHashingTest {
 
     @Test
     public void hashAndVerifyWithArgonChangeToBcryptPasswordWithResetFlow() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("password_hashing_alg", "ARGON2");
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -551,14 +553,14 @@ public class PasswordHashingTest {
             return;
         }
 
-        UserInfo user = EmailPassword.signUp(process.getProcess(), "t@example.com", "somePass");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "t@example.com", "somePass");
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON));
         ProcessState.getInstance(process.getProcess()).clear();
 
         Config.getConfig(process.getProcess()).setPasswordHashingAlg(CoreConfig.PASSWORD_HASHING_ALG.BCRYPT);
 
-        String token = EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
+        String token = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getSupertokensUserId());
         EmailPassword.resetPassword(process.getProcess(), token, "somePass2");
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_BCRYPT));
@@ -572,7 +574,7 @@ public class PasswordHashingTest {
 
     @Test
     public void hashAndVerifyWithBcryptChangeToArgonChangePassword() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -581,14 +583,14 @@ public class PasswordHashingTest {
             return;
         }
 
-        UserInfo user = EmailPassword.signUp(process.getProcess(), "t@example.com", "somePass");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "t@example.com", "somePass");
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_BCRYPT));
         ProcessState.getInstance(process.getProcess()).clear();
 
         Config.getConfig(process.getProcess()).setPasswordHashingAlg(CoreConfig.PASSWORD_HASHING_ALG.ARGON2);
 
-        EmailPassword.updateUsersEmailOrPassword(process.getProcess(), user.id, null, "somePass2");
+        EmailPassword.updateUsersEmailOrPassword(process.getProcess(), user.getSupertokensUserId(), null, "somePass2");
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON));
 
@@ -601,7 +603,7 @@ public class PasswordHashingTest {
 
     @Test
     public void hashAndVerifyWithArgonChangeToBcryptChangePassword() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("password_hashing_alg", "ARGON2");
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -611,14 +613,14 @@ public class PasswordHashingTest {
             return;
         }
 
-        UserInfo user = EmailPassword.signUp(process.getProcess(), "t@example.com", "somePass");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "t@example.com", "somePass");
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON));
         ProcessState.getInstance(process.getProcess()).clear();
 
         Config.getConfig(process.getProcess()).setPasswordHashingAlg(CoreConfig.PASSWORD_HASHING_ALG.BCRYPT);
 
-        EmailPassword.updateUsersEmailOrPassword(process.getProcess(), user.id, null, "somePass2");
+        EmailPassword.updateUsersEmailOrPassword(process.getProcess(), user.getSupertokensUserId(), null, "somePass2");
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_BCRYPT));
 
@@ -631,7 +633,7 @@ public class PasswordHashingTest {
 
     @Test
     public void differentPasswordHashGeneratedArgon() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("password_hashing_alg", "ARGON2");
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -653,7 +655,7 @@ public class PasswordHashingTest {
 
     @Test
     public void differentPasswordHashGeneratedBcrypt() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -674,7 +676,7 @@ public class PasswordHashingTest {
 
     @Test
     public void parallelImportUserSignInFirebaseScrypt() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("firebase_password_hashing_signer_key",
                 "gRhC3eDeQOdyEn4bMd9c6kxguWVmcIVq/SKa0JDPFeM6TcEevkaW56sIWfx88OHbJKnCXdWscZx0l2WbCJ1wbg==");
@@ -719,8 +721,8 @@ public class PasswordHashingTest {
                         EmailPassword.importUserWithPasswordHash(process.main, uniqueEmail, combinedPasswordHash,
                                 CoreConfig.PASSWORD_HASHING_ALG.FIREBASE_SCRYPT);
                         // try signing in
-                        UserInfo user = EmailPassword.signIn(process.main, uniqueEmail, password);
-                        assertEquals(user.passwordHash, combinedPasswordHash);
+                        AuthRecipeUserInfo user = EmailPassword.signIn(process.main, uniqueEmail, password);
+                        assertEquals(user.loginMethods[0].passwordHash, combinedPasswordHash);
                         assertNotNull(process
                                 .checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_FIREBASE_SCRYPT));
                         int queueSize = PasswordHashing.getInstance(process.getProcess())
@@ -755,7 +757,7 @@ public class PasswordHashingTest {
 
     @Test
     public void parallelImportUserSignInFirebaseScryptWithPoolSize4() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("firebase_password_hashing_signer_key",
                 "gRhC3eDeQOdyEn4bMd9c6kxguWVmcIVq/SKa0JDPFeM6TcEevkaW56sIWfx88OHbJKnCXdWscZx0l2WbCJ1wbg==");
@@ -801,8 +803,8 @@ public class PasswordHashingTest {
                         EmailPassword.importUserWithPasswordHash(process.main, uniqueEmail, combinedPasswordHash,
                                 CoreConfig.PASSWORD_HASHING_ALG.FIREBASE_SCRYPT);
                         // try signing in
-                        UserInfo user = EmailPassword.signIn(process.main, uniqueEmail, password);
-                        assertEquals(user.passwordHash, combinedPasswordHash);
+                        AuthRecipeUserInfo user = EmailPassword.signIn(process.main, uniqueEmail, password);
+                        assertEquals(user.loginMethods[0].passwordHash, combinedPasswordHash);
                         assertNotNull(process
                                 .checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_FIREBASE_SCRYPT));
                         int queueSize = PasswordHashing.getInstance(process.getProcess())
@@ -837,7 +839,7 @@ public class PasswordHashingTest {
 
     @Test
     public void parallelSignUpSignIn() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("password_hashing_alg", "ARGON2");
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);

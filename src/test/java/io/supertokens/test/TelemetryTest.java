@@ -153,6 +153,9 @@ public class TelemetryTest extends Mockito {
         assertTrue(telemetryData.has("telemetryId"));
         assertEquals(telemetryData.get("superTokensVersion").getAsString(),
                 Version.getVersion(process.getProcess()).getCoreVersion());
+        assertEquals(telemetryData.get("appId").getAsString(), "public");
+        assertEquals(telemetryData.get("connectionUriDomain").getAsString(), "");
+        assertTrue(telemetryData.has("mau"));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
@@ -206,7 +209,7 @@ public class TelemetryTest extends Mockito {
 
             telemetryId = telemetryData.get("telemetryId").getAsString();
 
-            process.kill();
+            process.kill(false);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
         }
 

@@ -17,13 +17,18 @@
 package io.supertokens.test.emailpassword.api;
 
 import com.google.gson.JsonObject;
+import io.supertokens.ActiveUsers;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -59,7 +64,7 @@ public class SignUpAPITest2_7 {
     // Check for bad input (missing fields)
     @Test
     public void testBadInput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -68,10 +73,12 @@ public class SignUpAPITest2_7 {
             return;
         }
 
+        long startTs = System.currentTimeMillis();
+
         {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/signup", null, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                        "http://localhost:3567/recipe/signup", null, 1000, 1000, null, SemVer.v2_7.get(),
                         "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
@@ -86,7 +93,7 @@ public class SignUpAPITest2_7 {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signup", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_7ForTests(), "emailpassword");
+                        SemVer.v2_7.get(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -99,13 +106,16 @@ public class SignUpAPITest2_7 {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signup", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_7ForTests(), "emailpassword");
+                        SemVer.v2_7.get(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
                         "Http error. Status Code: 400. Message: Field name 'email' is invalid in " + "JSON input"));
             }
         }
+
+        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
+        assert (activeUsers == 0);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -114,7 +124,7 @@ public class SignUpAPITest2_7 {
     // Check good input works and that user is there in db (and then call sign in)
     @Test
     public void testGoodInput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -122,6 +132,8 @@ public class SignUpAPITest2_7 {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
+
+        long startTS = System.currentTimeMillis();
 
         JsonObject signUpResponse = Utils.signUpRequest_2_5(process, "random@gmail.com", "validPass123");
         assertEquals(signUpResponse.get("status").getAsString(), "OK");
@@ -131,17 +143,19 @@ public class SignUpAPITest2_7 {
         assertEquals(signUpUser.get("email").getAsString(), "random@gmail.com");
         assertNotNull(signUpUser.get("id"));
 
-        UserInfo user = StorageLayer.getEmailPasswordStorage(process.getProcess())
-                .getUserInfoUsingEmail("random@gmail.com");
-        assertEquals(user.email, signUpUser.get("email").getAsString());
-        assertEquals(user.id, signUpUser.get("id").getAsString());
+        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTS);
+        assert (activeUsers == 1);
+        AuthRecipeUserInfo user = ((AuthRecipeStorage) StorageLayer.getStorage(process.getProcess()))
+                .listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), "random@gmail.com")[0];
+        assertEquals(user.loginMethods[0].email, signUpUser.get("email").getAsString());
+        assertEquals(user.getSupertokensUserId(), signUpUser.get("id").getAsString());
 
         JsonObject responseBody = new JsonObject();
         responseBody.addProperty("email", "random@gmail.com");
         responseBody.addProperty("password", "validPass123");
 
         JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/signin", responseBody, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "http://localhost:3567/recipe/signin", responseBody, 1000, 1000, null, SemVer.v2_7.get(),
                 "emailpassword");
 
         assertEquals(signInResponse.get("status").getAsString(), "OK");
@@ -160,10 +174,11 @@ public class SignUpAPITest2_7 {
 
     // Test the normalise email function
     // Test that only the normalised email is saved in the db
-    // Failure condition: If the email retrieved from the data is not normalised the test will fail
+    // Failure condition: If the email retrieved from the data is not normalised the
+    // test will fail
     @Test
     public void testTheNormaliseEmailFunction() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -180,10 +195,10 @@ public class SignUpAPITest2_7 {
         assertEquals(signUpUser.get("email").getAsString(), "random@gmail.com");
         assertNotNull(signUpUser.get("id"));
 
-        UserInfo userInfo = StorageLayer.getEmailPasswordStorage(process.getProcess())
-                .getUserInfoUsingId(signUpUser.get("id").getAsString());
+        AuthRecipeUserInfo userInfo = ((AuthRecipeStorage) StorageLayer.getStorage(process.getProcess()))
+                .getPrimaryUserById(new AppIdentifier(null, null), signUpUser.get("id").getAsString());
 
-        assertEquals(userInfo.email, "random@gmail.com");
+        assertEquals(userInfo.loginMethods[0].email, "random@gmail.com");
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -192,7 +207,7 @@ public class SignUpAPITest2_7 {
     // Test that giving an empty password throws a bad input error
     @Test
     public void testEmptyPasswordThrowsBadInputError() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -215,7 +230,7 @@ public class SignUpAPITest2_7 {
 
     @Test
     public void testSignUpWithDupicateEMail() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

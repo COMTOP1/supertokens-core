@@ -18,6 +18,8 @@ package io.supertokens.test.emailverification.api;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.emailverification.EmailVerification;
+import io.supertokens.emailverification.exception.EmailVerificationInvalidTokenException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
@@ -25,6 +27,7 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -78,6 +81,9 @@ public class RevokeTokenAPITest2_8 {
                 return;
             }
 
+            String token = EmailVerification.generateEmailVerificationToken(process.main, "someUserId",
+                    "someemail@gmail.com");
+
             JsonObject body = new JsonObject();
             body.addProperty("userId", "someUserId");
             body.addProperty("email", "someEmail@gmail.com");
@@ -86,12 +92,20 @@ public class RevokeTokenAPITest2_8 {
             String responseStatus = response.get("status").getAsString();
 
             assertEquals("OK", responseStatus);
+
+            try {
+                EmailVerification.verifyEmail(process.main, token);
+                assert (false);
+            } catch (EmailVerificationInvalidTokenException ignored) {
+
+            }
+
         });
     }
 
     private JsonObject makeRequest(Main main, JsonObject body) throws IOException, HttpResponseException {
         return HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 "http://localhost:3567/recipe/user/email/verify/token/remove", body, 1000, 1000, null,
-                Utils.getCdiVersion2_8ForTests(), RECIPE_ID.EMAIL_VERIFICATION.toString());
+                SemVer.v2_8.get(), RECIPE_ID.EMAIL_VERIFICATION.toString());
     }
 }

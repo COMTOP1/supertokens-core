@@ -21,15 +21,14 @@ import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
-import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
-import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -56,7 +55,7 @@ public class EmailPasswordAPITest {
 
     @Test
     public void testSignInAPI() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -68,8 +67,8 @@ public class EmailPasswordAPITest {
         // create a User
         String email = "test@example.com";
         String password = "testPass123";
-        UserInfo userInfo = EmailPassword.signUp(process.main, email, password);
-        String superTokensUserId = userInfo.id;
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, email, password);
+        String superTokensUserId = userInfo.getSupertokensUserId();
         String externalUserId = "externalId";
 
         // create the mapping
@@ -92,7 +91,7 @@ public class EmailPasswordAPITest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/signin", signUpRequestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "emailpassword");
+                    SemVer.v2_15.get(), "emailpassword");
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(externalUserId, response.get("user").getAsJsonObject().get("id").getAsString());
         }
@@ -111,7 +110,7 @@ public class EmailPasswordAPITest {
 
     @Test
     public void testResetPasswordFlowWithUserIdMapping() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -123,8 +122,8 @@ public class EmailPasswordAPITest {
         // create a User
         String email = "test@example.com";
         String password = "testPass123";
-        UserInfo userInfo = EmailPassword.signUp(process.main, email, password);
-        String superTokensUserId = userInfo.id;
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, email, password);
+        String superTokensUserId = userInfo.getSupertokensUserId();
         String externalUserId = "externalId";
 
         // create the mapping
@@ -139,7 +138,7 @@ public class EmailPasswordAPITest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user/password/reset/token", passwordResetTokenBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "emailpassword");
+                    SemVer.v2_15.get(), "emailpassword");
             assertEquals("OK", response.get("status").getAsString());
 
             passwordResetToken = response.get("token").getAsString();
@@ -155,13 +154,13 @@ public class EmailPasswordAPITest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user/password/reset", resetPasswordBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "emailpassword");
+                    SemVer.v2_15.get(), "emailpassword");
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(externalUserId, response.get("userId").getAsString());
         }
 
         // sign in with the new password and check that it works
-        UserInfo userInfo1 = EmailPassword.signIn(process.main, email, newPassword);
+        AuthRecipeUserInfo userInfo1 = EmailPassword.signIn(process.main, email, newPassword);
         assertNotNull(userInfo1);
 
         process.kill();
@@ -170,7 +169,7 @@ public class EmailPasswordAPITest {
 
     @Test
     public void testRetrievingUser() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -182,8 +181,8 @@ public class EmailPasswordAPITest {
         // create a User
         String email = "test@example.com";
         String password = "testPass123";
-        UserInfo userInfo = EmailPassword.signUp(process.main, email, password);
-        String superTokensUserId = userInfo.id;
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, email, password);
+        String superTokensUserId = userInfo.getSupertokensUserId();
         String externalUserId = "externalId";
 
         // create the mapping
@@ -195,7 +194,7 @@ public class EmailPasswordAPITest {
             queryParam.put("userId", externalUserId);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user", queryParam, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "emailpassword");
+                    SemVer.v2_15.get(), "emailpassword");
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(externalUserId, response.get("user").getAsJsonObject().get("id").getAsString());
         }
@@ -206,7 +205,7 @@ public class EmailPasswordAPITest {
             queryParam.put("email", email);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user", queryParam, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "emailpassword");
+                    SemVer.v2_15.get(), "emailpassword");
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(externalUserId, response.get("user").getAsJsonObject().get("id").getAsString());
         }
@@ -216,7 +215,7 @@ public class EmailPasswordAPITest {
 
     @Test
     public void testUpdatingUsersEmail() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -228,8 +227,8 @@ public class EmailPasswordAPITest {
         // create a User
         String email = "test@example.com";
         String password = "testPass123";
-        UserInfo userInfo = EmailPassword.signUp(process.main, email, password);
-        String superTokensUserId = userInfo.id;
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, email, password);
+        String superTokensUserId = userInfo.getSupertokensUserId();
         String externalUserId = "externalId";
 
         // create the mapping
@@ -244,12 +243,12 @@ public class EmailPasswordAPITest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "emailpassword");
+                    SemVer.v2_15.get(), "emailpassword");
             assertEquals("OK", response.get("status").getAsString());
         }
 
         // check that you can now sign in with the new email
-        UserInfo userInfo1 = EmailPassword.signIn(process.main, newEmail, password);
+        AuthRecipeUserInfo userInfo1 = EmailPassword.signIn(process.main, newEmail, password);
         assertNotNull(userInfo1);
 
         process.kill();
